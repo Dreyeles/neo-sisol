@@ -1,0 +1,118 @@
+.dashboard {
+    display: flex;
+    min-height: 100vh;
+    background: #f5f7fa;
+}
+
+/* Sidebar - Admin colors */
+.admin-dashboard .dashboard-sidebar {
+    width: 280px;
+    background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.admin-dashboard .sidebar-header {
+    padding: 8px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 4px;
+}
+
+.admin-dashboard .sidebar-logo {
+    width: 170px;
+    height: 170px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    margin-top: -8px;
+}
+
+.admin-dashboard .sidebar-nav {
+    flex: 1;
+    padding: 20px 0;
+}
+
+.admin-dashboard .nav-item {
+    width: 100%;
+    padding: 16px 20px;
+    background: none;
+    border: none;
+    color: white;
+    text-align: left;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.admin-dashboard .nav-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.admin-dashboard .nav-item.active {
+    background: rgba(255, 255, 255, 0.2);
+    border-left: 4px solid white;
+    font-weight: 600;
+}
+
+.admin-dashboard .sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.admin-dashboard .logout-button {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.admin-dashboard .logout-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Buttons - Admin colors */
+.admin-dashboard .btn-primary {
+    background: #1e40af;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.admin-dashboard .btn-primary:hover {
+    background: #1e3a8a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+}
+
+/* Stats cards - Admin colors */
+.admin-dashboard .cita-info p[style*="color: #00A39C"] {
+    color: #1e40af !important;
+}
+
+/* Form focus - Admin colors */
+.admin-dashboard .form-group input:focus,
+.admin-dashboard .form-group select:focus,
+.admin-dashboard .form-group textarea:focus {
+    outline: none;
+    border-color: #1e40af;
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+}
