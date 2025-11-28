@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
+import LogoutIcon from './LogoutIcon';
 
 const MOCK_RESULTADOS = [
   { id: 1, examen: 'Hemograma Completo', servicio: 'Laboratorio Central', fecha: '2024-01-12', fechaFormatted: '12 de Enero, 2024', tipo: 'pdf' },
@@ -15,6 +16,8 @@ const MOCK_HISTORIAL = [
 
 const Dashboard = ({ user, onLogout }) => {
   const [activeSection, setActiveSection] = useState('citas');
+  const [especialidades, setEspecialidades] = useState([]);
+  const [loadingEspecialidades, setLoadingEspecialidades] = useState(true);
 
   // Filtros Resultados
   const [filterDate, setFilterDate] = useState('');
@@ -23,6 +26,26 @@ const Dashboard = ({ user, onLogout }) => {
   // Filtros Historial
   const [filterHistorialDate, setFilterHistorialDate] = useState('');
   const [filterHistorialSpecialty, setFilterHistorialSpecialty] = useState('');
+
+  // Cargar especialidades desde la API
+  useEffect(() => {
+    const fetchEspecialidades = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/especialidades');
+        const data = await response.json();
+
+        if (data.status === 'OK') {
+          setEspecialidades(data.data);
+        }
+      } catch (error) {
+        console.error('Error al cargar especialidades:', error);
+      } finally {
+        setLoadingEspecialidades(false);
+      }
+    };
+
+    fetchEspecialidades();
+  }, []);
 
   const filteredResultados = MOCK_RESULTADOS.filter(item => {
     const matchDate = filterDate ? item.fecha === filterDate : true;
@@ -76,7 +99,7 @@ const Dashboard = ({ user, onLogout }) => {
         </nav>
         <div className="sidebar-footer">
           <button className="logout-button" onClick={onLogout}>
-            🚪 Cerrar Sesión
+            <LogoutIcon size={18} /> Cerrar Sesión
           </button>
         </div>
       </div>
@@ -117,11 +140,16 @@ const Dashboard = ({ user, onLogout }) => {
                 <div className="form-group">
                   <label>Especialidad</label>
                   <select>
-                    <option>Seleccione una especialidad</option>
-                    <option>Medicina General</option>
-                    <option>Cardiología</option>
-                    <option>Dermatología</option>
-                    <option>Pediatría</option>
+                    <option value="">Seleccione una especialidad</option>
+                    {loadingEspecialidades ? (
+                      <option disabled>Cargando especialidades...</option>
+                    ) : (
+                      especialidades.map(esp => (
+                        <option key={esp.id_especialidad} value={esp.id_especialidad}>
+                          {esp.nombre}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
                 <div className="form-group">
