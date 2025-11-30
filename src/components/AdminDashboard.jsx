@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './Dashboard.css'; // Reusing existing dashboard styles
 import './AdminDashboard.css'; // Admin-specific styles
+import LogoutIcon from './LogoutIcon';
 
 const AdminDashboard = ({ user, onLogout }) => {
     const [activeSection, setActiveSection] = useState('usuarios');
@@ -67,7 +68,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                 </nav>
                 <div className="sidebar-footer">
                     <button className="logout-button" onClick={onLogout}>
-                        🚪 Cerrar Sesión
+                        <LogoutIcon size={18} /> Cerrar Sesión
                     </button>
                 </div>
             </div>

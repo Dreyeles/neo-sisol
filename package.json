@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
+    "server": "cd backend && npm run dev",
     "build": "vite build",
     "preview": "vite preview"
   },

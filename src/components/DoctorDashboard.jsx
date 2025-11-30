@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './Dashboard.css'; // Reusing existing dashboard styles
 import './DoctorDashboard.css'; // Doctor-specific styles
+import LogoutIcon from './LogoutIcon';
 
 const DoctorDashboard = ({ user, onLogout }) => {
     const [activeSection, setActiveSection] = useState('agenda');
@@ -33,7 +34,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
                 </nav>
                 <div className="sidebar-footer">
                     <button className="logout-button" onClick={onLogout}>
-                        🚪 Cerrar Sesión
+                        <LogoutIcon size={18} /> Cerrar Sesión
                     </button>
                 </div>
             </div>
