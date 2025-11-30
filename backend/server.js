@@ -6,9 +6,9 @@ import db from './config/database.js';
 // Importar rutas
 import authRoutes from './routes/auth.js';
 import especialidadesRoutes from './routes/especialidades.js';
-// import pacienteRoutes from './routes/pacientes.js';
-// import medicoRoutes from './routes/medicos.js';
-// import citaRoutes from './routes/citas.js';
+import medicoRoutes from './routes/medicos.js';
+import citaRoutes from './routes/citas.js';
+import pagosRoutes from './routes/pagos.js';
 
 dotenv.config();
 
@@ -50,9 +50,10 @@ app.get('/api/test-db', async (req, res) => {
 // Rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/especialidades', especialidadesRoutes);
+app.use('/api/medicos', medicoRoutes);
+app.use('/api/citas', citaRoutes);
+app.use('/api/pagos', pagosRoutes);
 // app.use('/api/pacientes', pacienteRoutes);
-// app.use('/api/medicos', medicoRoutes);
-// app.use('/api/citas', citaRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {
