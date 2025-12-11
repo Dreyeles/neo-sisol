@@ -20,13 +20,19 @@ router.post('/procesar', async (req, res) => {
             comprobante_tipo
         } = req.body;
 
-        // Validar campos obligatorios
-        if (!id_paciente || !id_medico || !fecha_cita || !turno || !motivo_consulta || !metodo_pago) {
+        // Validar campos obligatorios mínimos
+        if (!id_paciente || !id_medico || !fecha_cita) {
             return res.status(400).json({
                 status: 'ERROR',
-                message: 'Faltan campos obligatorios'
+                message: 'Faltan campos obligatorios (paciente, médico o fecha)',
+                details: { id_paciente, id_medico, fecha_cita }
             });
         }
+
+        // Valores por defecto para campos opcionales en desarrollo
+        const turnoFinal = turno || 'manana';
+        const motivoFinal = motivo_consulta || 'Consulta General';
+        const metodoPagoFinal = metodo_pago || 'efectivo';
 
         // Obtener costo de consulta del médico
         const [medico] = await db.query(
@@ -47,7 +53,7 @@ router.post('/procesar', async (req, res) => {
         let hora_cita_calculada = hora_cita;
         if (!hora_cita) {
             // Si no se proporciona hora específica, usar la hora de inicio del turno
-            hora_cita_calculada = turno === 'manana' ? '07:00:00' : '14:00:00';
+            hora_cita_calculada = turnoFinal === 'manana' ? '07:00:00' : '14:00:00';
         }
 
         // Iniciar transacción
@@ -61,7 +67,7 @@ router.post('/procesar', async (req, res) => {
                     id_paciente, id_medico, fecha_cita, hora_cita, 
                     motivo_consulta, tipo_cita, estado
                 ) VALUES (?, ?, ?, ?, ?, 'primera_vez', 'programada')`,
-                [id_paciente, id_medico, fecha_cita, hora_cita_calculada, motivo_consulta]
+                [id_paciente, id_medico, fecha_cita, hora_cita_calculada, motivoFinal]
             );
 
             const id_cita = citaResult.insertId;
@@ -78,7 +84,7 @@ router.post('/procesar', async (req, res) => {
                     id_paciente,
                     costo_consulta,
                     costo_consulta,
-                    metodo_pago,
+                    metodoPagoFinal,
                     numero_transaccion || `TXN-${Date.now()}`,
                     comprobante_tipo || 'boleta'
                 ]

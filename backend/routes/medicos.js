@@ -29,4 +29,34 @@ router.get('/por-especialidad/:id_especialidad', async (req, res) => {
     }
 });
 
+// Obtener pacientes atendidos por un médico
+router.get('/:id_medico/pacientes', async (req, res) => {
+    try {
+        const { id_medico } = req.params;
+
+        const [pacientes] = await db.query(
+            `SELECT DISTINCT p.id_paciente, p.nombres, p.apellidos, p.dni, p.genero,
+                    MAX(c.fecha_cita) as ultima_cita
+             FROM paciente p
+             JOIN cita c ON p.id_paciente = c.id_paciente
+             WHERE c.id_medico = ? AND c.estado = 'completada'
+             GROUP BY p.id_paciente, p.nombres, p.apellidos, p.dni, p.genero
+             ORDER BY ultima_cita DESC`,
+            [id_medico]
+        );
+
+        res.json({
+            status: 'OK',
+            data: pacientes
+        });
+    } catch (error) {
+        console.error('Error al obtener pacientes del médico:', error);
+        res.status(500).json({
+            status: 'ERROR',
+            message: 'Error al obtener pacientes',
+            error: error.message
+        });
+    }
+});
+
 export default router;
