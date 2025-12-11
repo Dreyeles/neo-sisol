@@ -75,49 +75,52 @@ const Login = ({ isOpen = false, onClose = () => { }, onSwitchToRegister, onLogi
 
     setIsLoading(true);
 
-    // Simulación de petición de login
+    // Petición real de login
     try {
-      // Simulación de delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      console.log('Datos de login:', formData);
-
-      // Crear datos de usuario de prueba
-      let userData;
-
-      if (formData.email === 'admin@gmail.com' && formData.password === '123') {
-        userData = {
-          email: 'admin@sisol.gob.pe',
-          nombre: 'Administrador',
-          role: 'admin',
-          id: 'admin-123'
-        };
-      } else if (formData.email === 'medico1@gmail.com' && formData.password === '123') {
-        userData = {
-          email: 'medico@sisol.gob.pe',
-          nombre: 'Juan Pérez',
-          role: 'doctor',
-          id: 'doc-123'
-        };
-      } else {
-        userData = {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           email: formData.email,
-          nombre: formData.email.split('@')[0] || 'Usuario',
-          role: 'patient',
-          id: Math.random().toString(36).substr(2, 9)
+          password: formData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'OK') {
+        const userData = data.data;
+        // Adaptar estructura si es necesario para el frontend
+        const adaptedUser = {
+          email: userData.email,
+          nombre: userData.nombres || userData.nombre || 'Usuario',
+          role: userData.tipo_usuario === 'medico' ? 'doctor' : userData.tipo_usuario === 'administrativo' ? 'admin' : 'patient',
+          id: userData.id_usuario,
+          // Guardar IDs específicos según rol
+          id_paciente: userData.id_paciente,
+          id_medico: userData.id_medico,
+          id_administrativo: userData.id_personal_administrativo,
+          // Datos completos por si acaso
+          ...userData
         };
-      }
 
-      // Llamar a la función de éxito del login
-      if (onLoginSuccess) {
-        onLoginSuccess(userData);
-      }
+        console.log('Login exitoso:', adaptedUser);
 
-      // Cerrar modal después de login exitoso
-      onClose();
+        // Llamar a la función de éxito del login
+        if (onLoginSuccess) {
+          onLoginSuccess(adaptedUser);
+        }
+
+        // Cerrar modal después de login exitoso
+        onClose();
+      } else {
+        alert('Error al iniciar sesión: ' + data.message);
+      }
     } catch (error) {
       console.error('Error en el login:', error);
-      alert('Error al iniciar sesión. Por favor, intenta de nuevo.');
+      alert('Error de conexión al iniciar sesión.');
     } finally {
       setIsLoading(false);
     }

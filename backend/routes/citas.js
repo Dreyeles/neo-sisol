@@ -67,4 +67,64 @@ router.post('/check-availability', async (req, res) => {
     }
 });
 
+// Obtener citas por paciente
+router.get('/paciente/:id_paciente', async (req, res) => {
+    try {
+        const { id_paciente } = req.params;
+        const [citas] = await db.query(
+            `SELECT c.id_cita, c.fecha_cita, c.hora_cita, c.estado, c.motivo_consulta,
+                    m.nombres as medico_nombre, m.apellidos as medico_apellido, 
+                    e.nombre as especialidad
+             FROM cita c
+             JOIN medico m ON c.id_medico = m.id_medico
+             JOIN especialidades e ON m.id_especialidad = e.id_especialidad
+             WHERE c.id_paciente = ?
+             ORDER BY c.fecha_cita DESC, c.hora_cita DESC`,
+            [id_paciente]
+        );
+
+        // Formatear fechas para el frontend
+        const citasFormateadas = citas.map(cita => ({
+            ...cita,
+            fechaFormatted: new Date(cita.fecha_cita).toLocaleDateString('es-ES', {
+                day: 'numeric', month: 'long', year: 'numeric'
+            })
+        }));
+
+        res.json({ status: 'OK', data: citasFormateadas });
+    } catch (error) {
+        console.error('Error al obtener citas del paciente:', error);
+        res.status(500).json({ status: 'ERROR', message: 'Error al obtener citas' });
+    }
+});
+
+// Obtener citas por médico
+router.get('/medico/:id_medico', async (req, res) => {
+    try {
+        const { id_medico } = req.params;
+        const [citas] = await db.query(
+            `SELECT c.id_cita, c.fecha_cita, c.hora_cita, c.estado, c.motivo_consulta,
+                    p.nombres as paciente_nombre, p.apellidos as paciente_apellido, p.dni
+             FROM cita c
+             JOIN paciente p ON c.id_paciente = p.id_paciente
+             WHERE c.id_medico = ?
+             ORDER BY c.fecha_cita ASC, c.hora_cita ASC`,
+            [id_medico]
+        );
+
+        // Formatear fechas
+        const citasFormateadas = citas.map(cita => ({
+            ...cita,
+            fechaFormatted: new Date(cita.fecha_cita).toLocaleDateString('es-ES', {
+                day: 'numeric', month: 'long', year: 'numeric'
+            })
+        }));
+
+        res.json({ status: 'OK', data: citasFormateadas });
+    } catch (error) {
+        console.error('Error al obtener citas del médico:', error);
+        res.status(500).json({ status: 'ERROR', message: 'Error al obtener citas' });
+    }
+});
+
 export default router;

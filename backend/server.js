@@ -9,6 +9,8 @@ import especialidadesRoutes from './routes/especialidades.js';
 import medicoRoutes from './routes/medicos.js';
 import citaRoutes from './routes/citas.js';
 import pagosRoutes from './routes/pagos.js';
+import atencionRoutes from './routes/atencion.js';
+import pacienteRoutes from './routes/pacientes.js';
 
 dotenv.config();
 
@@ -53,7 +55,8 @@ app.use('/api/especialidades', especialidadesRoutes);
 app.use('/api/medicos', medicoRoutes);
 app.use('/api/citas', citaRoutes);
 app.use('/api/pagos', pagosRoutes);
-// app.use('/api/pacientes', pacienteRoutes);
+app.use('/api/atencion', atencionRoutes);
+app.use('/api/pacientes', pacienteRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {

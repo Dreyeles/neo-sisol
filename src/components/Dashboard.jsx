@@ -19,6 +19,10 @@ const Dashboard = ({ user, onLogout }) => {
   const [especialidades, setEspecialidades] = useState([]);
   const [loadingEspecialidades, setLoadingEspecialidades] = useState(true);
 
+  // Estado para citas reales
+  const [citas, setCitas] = useState([]);
+  const [loadingCitas, setLoadingCitas] = useState(true);
+
   // Estado para el formulario de citas
   const [citaEspecialidad, setCitaEspecialidad] = useState('');
   const [citaMedico, setCitaMedico] = useState('');
@@ -41,6 +45,9 @@ const Dashboard = ({ user, onLogout }) => {
   const [codigoAprobacion, setCodigoAprobacion] = useState(''); // Para Yape
   const [qrYape, setQrYape] = useState(''); // Para Yape
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [fechaExpiracion, setFechaExpiracion] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [nombreTitular, setNombreTitular] = useState('');
 
   // Filtros Resultados
   const [filterDate, setFilterDate] = useState('');
@@ -69,6 +76,50 @@ const Dashboard = ({ user, onLogout }) => {
 
     fetchEspecialidades();
   }, []);
+
+  // Cargar citas reales del paciente
+  const fetchCitas = async () => {
+    // Si no hay ID de paciente, no intentamos cargar y quitamos el loading
+    if (!user?.id_paciente) {
+      setLoadingCitas(false);
+      return;
+    }
+
+    setLoadingCitas(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/citas/paciente/${user.id_paciente}`);
+
+      if (!response.ok) {
+        throw new Error('Error en la respuesta del servidor');
+      }
+
+      const data = await response.json();
+
+      if (data.status === 'OK') {
+        setCitas(data.data);
+      } else {
+        console.error('Error del servidor:', data.message);
+        // Si hay error en la respuesta, asumimos lista vacía para no bloquear la UI
+        setCitas([]);
+      }
+    } catch (error) {
+      console.error('Error al cargar citas:', error);
+      setCitas([]); // En caso de error de red, lista vacía
+    } finally {
+      setLoadingCitas(false);
+    }
+  };
+
+  useEffect(() => {
+    console.log('Usuario actual en Dashboard:', user);
+    if (user?.id_paciente) {
+      console.log('Buscando citas para paciente ID:', user.id_paciente);
+      fetchCitas();
+    } else {
+      console.log('No hay ID de paciente, saltando fetchCitas');
+      setLoadingCitas(false);
+    }
+  }, [user]);
 
   // Cargar médicos cuando cambia la especialidad
   useEffect(() => {
@@ -160,27 +211,37 @@ const Dashboard = ({ user, onLogout }) => {
       return;
     }
 
+    if (!user || !user.id_paciente) {
+      console.error('Datos de usuario incompletos:', user);
+      alert('Error: No se ha identificado al paciente. Por favor, cierre sesión e ingrese nuevamente.');
+      return;
+    }
+
     setProcessingPayment(true);
 
     try {
       // Determinar el método de pago final para enviar al backend
       const metodoPagoFinal = metodoPago === 'billetera_digital' ? billeteraEspecifica : metodoPago;
 
+      const payload = {
+        id_paciente: user.id_paciente,
+        id_medico: citaMedico,
+        fecha_cita: citaFecha,
+        turno: citaTurno,
+        motivo_consulta: citaMotivo,
+        metodo_pago: metodoPagoFinal,
+        numero_transaccion: numeroTransaccion || undefined,
+        comprobante_tipo: 'boleta'
+      };
+
+      console.log('Enviando pago:', payload);
+
       const response = await fetch('http://localhost:5000/api/pagos/procesar', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          id_paciente: user.id_paciente,
-          id_medico: citaMedico,
-          fecha_cita: citaFecha,
-          turno: citaTurno,
-          motivo_consulta: citaMotivo,
-          metodo_pago: metodoPagoFinal,
-          numero_transaccion: numeroTransaccion || undefined,
-          comprobante_tipo: 'boleta'
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -196,17 +257,27 @@ const Dashboard = ({ user, onLogout }) => {
         setMetodoPago('');
         setBilleteraEspecifica('');
         setNumeroTarjeta('');
+        setFechaExpiracion('');
+        setCvv('');
+        setNombreTitular('');
         setNumeroTransaccion('');
         setCodigoAprobacion('');
         setQrYape('');
         setShowPaymentModal(false);
         setActiveSection('citas');
+        // Recargar citas
+        fetchCitas();
       } else {
-        alert('Error al procesar el pago: ' + data.message);
+        console.error('Error backend:', data);
+        let errorMsg = 'Error al procesar el pago: ' + data.message;
+        if (data.details) {
+          errorMsg += '\nDetalles: ' + JSON.stringify(data.details);
+        }
+        alert(errorMsg);
       }
     } catch (error) {
       console.error('Error al procesar pago:', error);
-      alert('Error al procesar el pago');
+      alert('Error al procesar el pago (red)');
     } finally {
       setProcessingPayment(false);
     }
@@ -218,11 +289,15 @@ const Dashboard = ({ user, onLogout }) => {
     return matchDate && matchService;
   });
 
-  const filteredHistorial = MOCK_HISTORIAL.filter(item => {
-    const matchDate = filterHistorialDate ? item.fecha === filterHistorialDate : true;
+  const filteredHistorial = citas.filter(item => {
+    // Para historial filtrar las citas pasadas o completadas, aqui mostramos todas por ahora
+    const matchDate = filterHistorialDate ? item.fecha_cita.startsWith(filterHistorialDate) : true;
     const matchSpecialty = filterHistorialSpecialty ? item.especialidad === filterHistorialSpecialty : true;
     return matchDate && matchSpecialty;
   });
+
+  // Filtrar citas futuras para "Mis Próximas Citas"
+  const proximasCitas = citas.filter(c => c.estado === 'programada');
 
   return (
     <div className="dashboard">
@@ -282,18 +357,41 @@ const Dashboard = ({ user, onLogout }) => {
             <div className="section-content">
               <h2>Mis Próximas Citas</h2>
               <div className="citas-list">
-                <div className="cita-card">
-                  <div className="cita-info">
-                    <h3>Consulta General</h3>
-                    <p>Dr. Juan Pérez</p>
-                    <p className="cita-fecha">📅 15 de Enero, 2024 - 10:00 AM</p>
+                {loadingCitas ? (
+                  <p>Cargando citas...</p>
+                ) : proximasCitas.length > 0 ? (
+                  proximasCitas.map(cita => (
+                    <div className="cita-card" key={cita.id_cita}>
+                      <div className="cita-info">
+                        <h3>{cita.especialidad}</h3>
+                        <p>Dr. {cita.medico_nombre} {cita.medico_apellido}</p>
+                        <p className="cita-fecha">📅 {cita.fechaFormatted} - {cita.hora_cita}</p>
+                      </div>
+                      <div className="cita-actions">
+                        <span className={`historial-status ${cita.estado}`}>{cita.estado}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="empty-state" style={{
+                    backgroundColor: 'white',
+                    padding: '40px',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                    textAlign: 'center',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>📅</div>
+                    <p style={{ fontSize: '18px', color: '#4a5568', marginBottom: '8px' }}>No tienes ninguna cita agendada</p>
+                    <p style={{ color: '#718096', marginBottom: '24px' }}>Comienza a cuidar tu salud agendando una cita hoy mismo.</p>
+                    <button
+                      className="btn-primary"
+                      onClick={() => setActiveSection('agendar')}
+                    >
+                      Agenda tu primera cita ahora
+                    </button>
                   </div>
-                  <div className="cita-actions">
-                    <button className="btn-secondary">Ver Detalles</button>
-                    <button className="btn-danger">Cancelar</button>
-                  </div>
-                </div>
-                <p className="empty-state">No hay más citas programadas</p>
+                )}
               </div>
             </div>
           )}
@@ -522,17 +620,60 @@ const Dashboard = ({ user, onLogout }) => {
                             <label>Número de Tarjeta</label>
                             <input
                               type="text"
-                              placeholder="1234 5678 9012 3456"
+                              placeholder="0000 0000 0000 0000"
                               value={numeroTarjeta}
-                              onChange={(e) => setNumeroTarjeta(e.target.value)}
+                              onChange={(e) => {
+                                // Formato simple para tarjeta
+                                const val = e.target.value.replace(/\D/g, '').slice(0, 16);
+                                const match = val.match(/.{1,4}/g);
+                                setNumeroTarjeta(match ? match.join(' ') : val);
+                              }}
                               maxLength="19"
+                            />
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div className="form-group">
+                              <label>Fecha de Expiración</label>
+                              <input
+                                type="text"
+                                placeholder="MM/AA"
+                                value={fechaExpiracion}
+                                onChange={(e) => {
+                                  // Formato MM/AA
+                                  let val = e.target.value.replace(/\D/g, '');
+                                  if (val.length >= 2) {
+                                    val = val.slice(0, 2) + '/' + val.slice(2, 4);
+                                  }
+                                  setFechaExpiracion(val);
+                                }}
+                                maxLength="5"
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label>CVV</label>
+                              <input
+                                type="password"
+                                placeholder="123"
+                                value={cvv}
+                                onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                                maxLength="3"
+                              />
+                            </div>
+                          </div>
+                          <div className="form-group">
+                            <label>Nombre del Titular</label>
+                            <input
+                              type="text"
+                              placeholder="Como aparece en la tarjeta"
+                              value={nombreTitular}
+                              onChange={(e) => setNombreTitular(e.target.value.toUpperCase())}
                             />
                           </div>
                         </div>
                       )}
 
-                      {/* Campos específicos para Yape */}
-                      {metodoPago === 'billetera_digital' && billeteraEspecifica === 'yape' && (
+                      {/* Campos específicos para Yape y Plin */}
+                      {metodoPago === 'billetera_digital' && (billeteraEspecifica === 'yape' || billeteraEspecifica === 'plin') && (
                         <div className="payment-fields">
                           <div className="form-group">
                             <label>Código de Aprobación</label>
@@ -545,7 +686,7 @@ const Dashboard = ({ user, onLogout }) => {
                           </div>
 
                           <div className="form-group">
-                            <label>Escanea el código QR para pagar</label>
+                            <label>Escanea el código QR para pagar con {billeteraEspecifica === 'yape' ? 'Yape' : 'Plin'}</label>
                             <div style={{
                               marginTop: '12px',
                               padding: '20px',
@@ -555,8 +696,12 @@ const Dashboard = ({ user, onLogout }) => {
                               boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                             }}>
                               <img
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('yape://pago/sisol/50.00')}`}
-                                alt="Código QR Yape"
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                                  billeteraEspecifica === 'yape'
+                                    ? 'yape://pago/sisol/50.00'
+                                    : 'plin://pago/sisol/50.00'
+                                )}`}
+                                alt={`Código QR ${billeteraEspecifica === 'yape' ? 'Yape' : 'Plin'}`}
                                 style={{ width: '200px', height: '200px', display: 'block' }}
                               />
                               <p style={{
@@ -572,8 +717,8 @@ const Dashboard = ({ user, onLogout }) => {
                         </div>
                       )}
 
-                      {/* Campos para Plin y Transferencia */}
-                      {((metodoPago === 'billetera_digital' && billeteraEspecifica === 'plin') || metodoPago === 'transferencia') && (
+                      {/* Campos para Transferencia (Plin ahora usa lógica de Yape) */}
+                      {metodoPago === 'transferencia' && (
                         <div className="payment-fields">
                           <div className="form-group">
                             <label>Número de Transacción</label>
@@ -666,15 +811,17 @@ const Dashboard = ({ user, onLogout }) => {
 
               <div className="historial-list">
                 {filteredHistorial.map(cita => (
-                  <div className="historial-item" key={cita.id}>
+                  <div className="historial-item" key={cita.id_cita}>
                     <div className="historial-info">
                       <h3>{cita.especialidad}</h3>
-                      <p>{cita.doctor}</p>
-                      <p className="historial-fecha">📅 {cita.fechaFormatted}</p>
+                      <p>Dr. {cita.medico_nombre} {cita.medico_apellido}</p>
+                      <p className="historial-fecha">📅 {cita.fechaFormatted} - {cita.hora_cita}</p>
                     </div>
                     <div className="historial-actions">
-                      <span className="historial-status completed">Completada</span>
-                      <button className="btn-secondary btn-sm" style={{ marginTop: '8px' }}>⬇️ Descargar Resultados</button>
+                      <span className={`historial-status ${cita.estado}`}>{cita.estado}</span>
+                      {cita.estado === 'completada' && (
+                        <button className="btn-secondary btn-sm" style={{ marginTop: '8px' }}>⬇️ Descargar Resultados</button>
+                      )}
                     </div>
                   </div>
                 ))}

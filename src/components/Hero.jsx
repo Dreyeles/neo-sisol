@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lock } from 'lucide-react';
+// import { Lock } from 'lucide-react';
 import './Hero.css';
 
 const Hero = ({ onAgendarCitaClick }) => {
@@ -64,23 +64,36 @@ const Hero = ({ onAgendarCitaClick }) => {
               </div>
               <div className="floating-card card-1">
                 <div className="card-icon">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="#FFD700" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                  </svg>
+                  <img src="/lightning-icon.png" alt="Más rápido" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
                 </div>
                 <div className="card-text">Más rápido</div>
               </div>
               <div className="floating-card card-2">
                 <div className="card-icon">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
-                  </svg>
+                  <img src="/cursor-icon.png" alt="Más fácil" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
                 </div>
                 <div className="card-text">Más fácil</div>
               </div>
               <div className="floating-card card-3">
                 <div className="card-icon">
-                  <Lock size={32} color="#1e3a8a" strokeWidth={1.5} />
+                  <div
+                    style={{
+                      width: '48px',
+                      height: '48px',
+                      marginTop: '5px',
+                      backgroundColor: '#1e3a8a',
+                      maskImage: 'url(/secure-lock.png)',
+                      maskSize: 'contain',
+                      maskRepeat: 'no-repeat',
+                      maskPosition: 'center',
+                      WebkitMaskImage: 'url(/secure-lock.png)',
+                      WebkitMaskSize: 'contain',
+                      WebkitMaskRepeat: 'no-repeat',
+                      WebkitMaskPosition: 'center'
+                    }}
+                    role="img"
+                    aria-label="Más seguro"
+                  />
                 </div>
                 <div className="card-text">Más seguro</div>
               </div>
