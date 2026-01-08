@@ -8,6 +8,13 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
     dni: '',
     email: '',
     telefono: '',
+    direccion: '',
+    distrito: '',
+    provincia: '',
+    departamento: 'Lima',
+    contacto_emergencia_nombre: '',
+    contacto_emergencia_telefono: '',
+    contacto_emergencia_relacion: '',
     password: '',
     confirmPassword: '',
     fecha_nacimiento: '',
@@ -15,6 +22,26 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Datos para ubicación
+  const provinciasLimaReg = [
+    "Barranca", "Cajatambo", "Canta", "Cañete", "Huaral",
+    "Huarochirí", "Huaura (antes Chancay)", "Oyón", "Yauyos", "Lima Metropolitana"
+  ];
+
+  const distritosLimaReg = [
+    "Ancón", "Ate", "Barranco", "Breña", "Carabayllo", "Chaclacayo", "Chorrillos",
+    "Cieneguilla", "Comas", "El Agustino", "Independencia", "Jesús María",
+    "La Molina", "La Victoria", "Lima", "Lince", "Los Olivos", "Lurigancho", "Lurín",
+    "Magdalena del Mar", "Miraflores", "Pachacámac", "Pucusana", "Pueblo Libre",
+    "Puente Piedra", "Punta Hermosa", "Punta Negra", "Rímac", "San Bartolo",
+    "San Borja", "San Isidro", "San Juan de Lurigancho", "San Juan de Miraflores",
+    "San Luis", "San Martín de Porres", "San Miguel", "Santa Anita",
+    "Santa María del Mar", "Santa Rosa", "Santiago de Surco", "Surquillo",
+    "Villa El Salvador", "Villa María del Triunfo"
+  ];
 
   // Cerrar modal con ESC
   useEffect(() => {
@@ -45,6 +72,19 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
       ...prev,
       [name]: value
     }));
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // Resetear distrito si cambia provincia y no es Lima Metropolitana
+    if (name === 'provincia') {
+      if (value !== 'Lima Metropolitana') {
+        setFormData(prev => ({ ...prev, distrito: '' }));
+      }
+    }
+
     // Limpiar error del campo cuando el usuario empiece a escribir
     if (errors[name]) {
       setErrors(prev => ({
@@ -142,10 +182,18 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
       // Limpiar formulario
       setFormData({
         nombres: '',
+        nombres: '',
         apellidos: '',
         dni: '',
         email: '',
         telefono: '',
+        direccion: '',
+        distrito: '',
+        provincia: '',
+        departamento: '',
+        contacto_emergencia_nombre: '',
+        contacto_emergencia_telefono: '',
+        contacto_emergencia_relacion: '',
         password: '',
         confirmPassword: '',
         fecha_nacimiento: '',
@@ -257,6 +305,111 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
               {errors.telefono && <span className="error-message">{errors.telefono}</span>}
             </div>
 
+            <div className="form-group">
+              <label htmlFor="direccion">Dirección</label>
+              <input
+                type="text"
+                id="direccion"
+                name="direccion"
+                value={formData.direccion}
+                onChange={handleChange}
+                placeholder="Av. Principal 123"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="departamento">Departamento</label>
+                <input
+                  type="text"
+                  id="departamento"
+                  name="departamento"
+                  value={formData.departamento}
+                  readOnly // Por defecto Lima
+                  disabled={isLoading}
+                  style={{ backgroundColor: '#f3f4f6' }}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="provincia">Provincia</label>
+                <select
+                  id="provincia"
+                  name="provincia"
+                  value={formData.provincia}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                >
+                  <option value="">Seleccione</option>
+                  {provinciasLimaReg.map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+              {formData.provincia === 'Lima Metropolitana' && (
+                <div className="form-group">
+                  <label htmlFor="distrito">Distrito</label>
+                  <select
+                    id="distrito"
+                    name="distrito"
+                    value={formData.distrito}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                  >
+                    <option value="">Seleccione Distrito</option>
+                    {distritosLimaReg.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="form-section-divider">
+              <span>Contacto de Emergencia</span>
+            </div>
+            <div className="form-group">
+              <label htmlFor="contacto_emergencia_nombre">Nombre Contacto</label>
+              <input
+                type="text"
+                id="contacto_emergencia_nombre"
+                name="contacto_emergencia_nombre"
+                value={formData.contacto_emergencia_nombre}
+                onChange={handleChange}
+                placeholder="Nombre completo"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="contacto_emergencia_telefono">Teléfono Contacto</label>
+                <input
+                  type="tel"
+                  id="contacto_emergencia_telefono"
+                  name="contacto_emergencia_telefono"
+                  value={formData.contacto_emergencia_telefono}
+                  onChange={handleChange}
+                  placeholder="Celular"
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="contacto_emergencia_relacion">Relación / Parentesco</label>
+                <input
+                  type="text"
+                  id="contacto_emergencia_relacion"
+                  name="contacto_emergencia_relacion"
+                  value={formData.contacto_emergencia_relacion}
+                  onChange={handleChange}
+                  placeholder="Ej: Madre, Padre, Hermano"
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="fecha_nacimiento">Fecha de Nacimiento</label>
@@ -294,31 +447,71 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
 
             <div className="form-group">
               <label htmlFor="password">Contraseña</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={errors.password ? 'input-error' : ''}
-                placeholder="••••••••"
-                disabled={isLoading}
-              />
+              <div className="password-input-wrapper">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={errors.password ? 'input-error' : ''}
+                  placeholder="••••••••"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  )}
+                </button>
+              </div>
               {errors.password && <span className="error-message">{errors.password}</span>}
             </div>
 
             <div className="form-group">
               <label htmlFor="confirmPassword">Confirmar Contraseña</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className={errors.confirmPassword ? 'input-error' : ''}
-                placeholder="••••••••"
-                disabled={isLoading}
-              />
+              <div className="password-input-wrapper">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={errors.confirmPassword ? 'input-error' : ''}
+                  placeholder="••••••••"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showConfirmPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  )}
+                </button>
+              </div>
               {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
             </div>
 

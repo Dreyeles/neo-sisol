@@ -11,6 +11,8 @@ import citaRoutes from './routes/citas.js';
 import pagosRoutes from './routes/pagos.js';
 import atencionRoutes from './routes/atencion.js';
 import pacienteRoutes from './routes/pacientes.js';
+import serviciosRoutes from './routes/servicios.js';
+import archivosRoutes from './routes/archivos.js';
 
 dotenv.config();
 
@@ -57,6 +59,9 @@ app.use('/api/citas', citaRoutes);
 app.use('/api/pagos', pagosRoutes);
 app.use('/api/atencion', atencionRoutes);
 app.use('/api/pacientes', pacienteRoutes);
+app.use('/api/servicios', serviciosRoutes);
+app.use('/api/archivos', archivosRoutes);
+app.use('/uploads', express.static('uploads'));
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {

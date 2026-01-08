@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { jsPDF } from "jspdf";
 import './Dashboard.css';
 import LogoutIcon from './LogoutIcon';
 
@@ -48,6 +49,11 @@ const Dashboard = ({ user, onLogout }) => {
   const [fechaExpiracion, setFechaExpiracion] = useState('');
   const [cvv, setCvv] = useState('');
   const [nombreTitular, setNombreTitular] = useState('');
+
+  // Estados para pago de Exámenes
+  const [paymentType, setPaymentType] = useState('cita'); // 'cita' | 'examen'
+  const [selectedExamsToPay, setSelectedExamsToPay] = useState([]);
+  const [totalExamAmount, setTotalExamAmount] = useState(0);
 
   // Filtros Resultados
   const [filterDate, setFilterDate] = useState('');
@@ -194,9 +200,145 @@ const Dashboard = ({ user, onLogout }) => {
   const handleAgendarCita = (e) => {
     e.preventDefault();
     if (availability && availability.available) {
-      // Mostrar modal de pago en lugar de agendar directamente
+      // Configurar modal para CITA
+      setPaymentType('cita');
       setShowPaymentModal(true);
     }
+  };
+
+  const handlePayExams = (cita) => {
+    try {
+      if (!cita.examenes_solicitados) return;
+      const exams = JSON.parse(cita.examenes_solicitados);
+      if (Array.isArray(exams) && exams.length > 0) {
+        const total = exams.reduce((sum, ex) => sum + (parseFloat(ex.costo) || 0), 0);
+        setSelectedExamsToPay(exams);
+        setTotalExamAmount(total);
+        setPaymentType('examen');
+        setShowPaymentModal(true);
+      }
+    } catch (e) {
+      console.error("Error parsing exams:", e);
+      alert("Error al cargar detalles de los exámenes.");
+    }
+  };
+
+  const generarPDF = (cita) => {
+    const doc = new jsPDF();
+    const fecha = cita.fechaFormatted || new Date().toLocaleDateString();
+
+    // Cabecera
+    doc.setFillColor(0, 139, 133); // Color Neo SISOL (Teal)
+    doc.rect(0, 0, 210, 20, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("Neo SISOL", 15, 13);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Sistema Integral de Salud Online", 150, 13);
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("INFORME DE ATENCIÓN", 105, 40, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.line(20, 45, 190, 45);
+
+    doc.setFont("helvetica", "bold"); doc.text("Fecha:", 20, 55);
+    doc.setFont("helvetica", "normal"); doc.text(fecha, 50, 55);
+
+    doc.setFont("helvetica", "bold"); doc.text("Paciente:", 20, 62);
+    const nombrePaciente = `${user?.nombres || user?.nombre || "Paciente"} ${user?.apellidos || ""}`.trim();
+    doc.setFont("helvetica", "normal"); doc.text(nombrePaciente, 50, 62);
+
+    doc.setFont("helvetica", "bold"); doc.text("Médico:", 120, 62);
+    doc.setFont("helvetica", "normal"); doc.text(`Dr. ${cita.medico_nombre || ''} ${cita.medico_apellido || ''}`.trim(), 140, 62);
+
+    doc.line(20, 75, 190, 75);
+
+    let yPos = 90;
+    const renderStructuredSection = (titulo, contenidoRaw, yStart) => {
+      if (!contenidoRaw) return yStart;
+
+      doc.setFont("helvetica", "bold"); doc.text(titulo + ":", 20, yStart);
+      yStart += 5;
+      doc.setFont("helvetica", "normal");
+
+      let isJson = false;
+      let data = [];
+      try {
+        data = JSON.parse(contenidoRaw);
+        if (Array.isArray(data)) isJson = true;
+      } catch (e) { isJson = false; }
+
+      if (isJson) {
+        data.forEach(item => {
+          doc.text(`• ${item}`, 25, yStart);
+          yStart += 5;
+        });
+        yStart += 5;
+      } else {
+        const lineas = doc.splitTextToSize(contenidoRaw, 170);
+        doc.text(lineas, 20, yStart);
+        yStart += (lineas.length * 5) + 5;
+      }
+      return yStart + 5;
+    };
+
+    // Renderizar secciones dinámicas
+    yPos = renderStructuredSection("Motivo", cita.motivo_consulta, yPos);
+    yPos = renderStructuredSection("Diagnóstico", cita.diagnostico, yPos);
+    yPos = renderStructuredSection("Tratamiento / Indicaciones", cita.tratamiento, yPos);
+    // Receta se maneja especial abajo
+    yPos = renderStructuredSection("Observaciones", cita.observaciones, yPos);
+
+    // Manejo especial para Receta Médica (Tabla)
+    if (cita.receta_medica) {
+      doc.setFont("helvetica", "bold"); doc.text("Receta Médica:", 20, yPos);
+      yPos += 7;
+
+      let isJsonReceta = false;
+      let recetaData = [];
+      try {
+        recetaData = JSON.parse(cita.receta_medica);
+        if (Array.isArray(recetaData)) isJsonReceta = true;
+      } catch (e) { isJsonReceta = false; }
+
+      if (isJsonReceta) {
+        // Cabecera de Tabla
+        doc.setFillColor(240, 240, 240);
+        doc.rect(20, yPos, 170, 8, 'F');
+        doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+        doc.text("Medicamento / Dosis", 22, yPos + 5);
+        doc.text("Indicaciones (Frecuencia/Duración)", 100, yPos + 5);
+        yPos += 10;
+
+        doc.setFont("helvetica", "normal");
+        recetaData.forEach((med, idx) => {
+          const nombreDosis = `${med.nombre} ${med.dosis}`;
+          const indica = `${med.frecuencia} - ${med.duracion} ${med.notas ? '(' + med.notas + ')' : ''}`;
+
+          doc.text(`• ${nombreDosis}`, 22, yPos);
+          const splitIndica = doc.splitTextToSize(indica, 85);
+          doc.text(splitIndica, 100, yPos);
+
+          yPos += (splitIndica.length * 5) + 3;
+        });
+      } else {
+        // Texto plano legacy
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+        const lineas = doc.splitTextToSize(cita.receta_medica, 170);
+        doc.text(lineas, 20, yPos);
+      }
+    }
+
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text("Generado por Neo SISOL", 105, 280, { align: "center" });
+    doc.save(`SISOL_Informe_${fecha.replace(/\//g, '-')}.pdf`);
   };
 
   const handleConfirmPayment = async () => {
@@ -247,7 +389,7 @@ const Dashboard = ({ user, onLogout }) => {
       const data = await response.json();
 
       if (data.status === 'OK') {
-        alert('¡Pago procesado y cita agendada con éxito!');
+        alert(paymentType === 'cita' ? '¡Pago procesado y cita agendada con éxito!' : '¡Pago de exámenes registrado con éxito!');
         // Resetear formulario
         setCitaEspecialidad('');
         setCitaMedico('');
@@ -507,29 +649,47 @@ const Dashboard = ({ user, onLogout }) => {
                     </div>
 
                     <div className="payment-modal-body">
-                      {/* Resumen de la cita */}
+                      {/* Resumen de la cita o Exámenes */}
                       <div className="payment-summary">
-                        <h4>Resumen de la Cita</h4>
-                        <div className="summary-item">
-                          <span>Especialidad:</span>
-                          <strong>{especialidades.find(e => e.id_especialidad == citaEspecialidad)?.nombre}</strong>
-                        </div>
-                        <div className="summary-item">
-                          <span>Médico:</span>
-                          <strong>{medicos.find(m => m.id_medico == citaMedico)?.nombres} {medicos.find(m => m.id_medico == citaMedico)?.apellidos}</strong>
-                        </div>
-                        <div className="summary-item">
-                          <span>Fecha:</span>
-                          <strong>{citaFecha}</strong>
-                        </div>
-                        <div className="summary-item">
-                          <span>Turno:</span>
-                          <strong>{citaTurno === 'manana' ? 'Mañana (7:00 AM - 12:00 PM)' : 'Tarde (2:00 PM - 7:00 PM)'}</strong>
-                        </div>
-                        <div className="summary-item total">
-                          <span>Total a pagar:</span>
-                          <strong>S/ 50.00</strong>
-                        </div>
+                        {paymentType === 'cita' ? (
+                          <>
+                            <h4>Resumen de la Cita</h4>
+                            <div className="summary-item">
+                              <span>Especialidad:</span>
+                              <strong>{especialidades.find(e => e.id_especialidad == citaEspecialidad)?.nombre}</strong>
+                            </div>
+                            <div className="summary-item">
+                              <span>Médico:</span>
+                              <strong>{medicos.find(m => m.id_medico == citaMedico)?.nombres} {medicos.find(m => m.id_medico == citaMedico)?.apellidos}</strong>
+                            </div>
+                            <div className="summary-item">
+                              <span>Fecha:</span>
+                              <strong>{citaFecha}</strong>
+                            </div>
+                            <div className="summary-item">
+                              <span>Turno:</span>
+                              <strong>{citaTurno === 'manana' ? 'Mañana (7:00 AM - 12:00 PM)' : 'Tarde (2:00 PM - 7:00 PM)'}</strong>
+                            </div>
+                            <div className="summary-item total">
+                              <span>Total a pagar:</span>
+                              <strong>S/ 50.00</strong>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <h4>Resumen de Exámenes</h4>
+                            {selectedExamsToPay.map((ex, idx) => (
+                              <div className="summary-item" key={idx} style={{ fontSize: '13px' }}>
+                                <span>{ex.servicio}:</span>
+                                <strong>S/ {parseFloat(ex.costo).toFixed(2)}</strong>
+                              </div>
+                            ))}
+                            <div className="summary-item total" style={{ marginTop: '15px', paddingTop: '10px', borderTop: '1px dashed #ccc' }}>
+                              <span>Total a pagar:</span>
+                              <strong>S/ {totalExamAmount.toFixed(2)}</strong>
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       {/* Métodos de pago */}
@@ -820,7 +980,24 @@ const Dashboard = ({ user, onLogout }) => {
                     <div className="historial-actions">
                       <span className={`historial-status ${cita.estado}`}>{cita.estado}</span>
                       {cita.estado === 'completada' && (
-                        <button className="btn-secondary btn-sm" style={{ marginTop: '8px' }}>⬇️ Descargar Resultados</button>
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
+                          <button
+                            className="btn-secondary btn-sm"
+                            onClick={() => generarPDF(cita)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px' }}
+                          >
+                            📄 Descargar Informe
+                          </button>
+                          {cita.examenes_solicitados && cita.examenes_solicitados.length > 5 && (
+                            <button
+                              className="btn-primary btn-sm"
+                              onClick={() => handlePayExams(cita)}
+                              style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', background: '#e53e3e', borderColor: '#e53e3e' }}
+                            >
+                              💰 Pagar Exámenes
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

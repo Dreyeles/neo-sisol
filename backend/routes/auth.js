@@ -21,7 +21,10 @@ router.post('/register', async (req, res) => {
             direccion,
             distrito,
             provincia,
-            departamento
+            departamento,
+            contacto_emergencia_nombre,
+            contacto_emergencia_telefono,
+            contacto_emergencia_relacion
         } = req.body;
 
         // Validar campos obligatorios
@@ -75,12 +78,16 @@ router.post('/register', async (req, res) => {
             await connection.query(
                 `INSERT INTO paciente (
           id_usuario, dni, nombres, apellidos, fecha_nacimiento, genero,
-          telefono, celular, direccion, distrito, provincia, departamento, estado
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          telefono, celular, direccion, distrito, provincia, departamento, 
+          contacto_emergencia_nombre, contacto_emergencia_telefono, contacto_emergencia_relacion,
+          estado
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     id_usuario, dni, nombres, apellidos, fecha_nacimiento, genero,
                     telefono || null, celular || null, direccion || null,
-                    distrito || null, provincia || null, departamento || null, 'activo'
+                    distrito || null, provincia || null, departamento || null,
+                    contacto_emergencia_nombre || null, contacto_emergencia_telefono || null, contacto_emergencia_relacion || null,
+                    'activo'
                 ]
             );
 

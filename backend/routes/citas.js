@@ -74,10 +74,13 @@ router.get('/paciente/:id_paciente', async (req, res) => {
         const [citas] = await db.query(
             `SELECT c.id_cita, c.fecha_cita, c.hora_cita, c.estado, c.motivo_consulta,
                     m.nombres as medico_nombre, m.apellidos as medico_apellido, 
-                    e.nombre as especialidad
+                    e.nombre as especialidad,
+                    am.id_atencion, am.examenes_solicitados, am.diagnostico, 
+                    am.receta_medica, am.tratamiento, am.observaciones
              FROM cita c
              JOIN medico m ON c.id_medico = m.id_medico
              JOIN especialidades e ON m.id_especialidad = e.id_especialidad
+             LEFT JOIN atencion_medica am ON c.id_cita = am.id_cita
              WHERE c.id_paciente = ?
              ORDER BY c.fecha_cita DESC, c.hora_cita DESC`,
             [id_paciente]
@@ -103,7 +106,7 @@ router.get('/medico/:id_medico', async (req, res) => {
     try {
         const { id_medico } = req.params;
         const [citas] = await db.query(
-            `SELECT c.id_cita, c.fecha_cita, c.hora_cita, c.estado, c.motivo_consulta,
+            `SELECT c.id_cita, c.fecha_cita, c.hora_cita, c.estado, c.motivo_consulta, c.id_paciente,
                     p.nombres as paciente_nombre, p.apellidos as paciente_apellido, p.dni
              FROM cita c
              JOIN paciente p ON c.id_paciente = p.id_paciente

@@ -25,7 +25,8 @@ router.post('/registrar', async (req, res) => {
         // Tratamiento
         tratamiento,
         receta_medica,
-        proxima_cita
+        proxima_cita,
+        examenes_solicitados
     } = req.body;
 
     const connection = await db.getConnection();
@@ -43,6 +44,40 @@ router.post('/registrar', async (req, res) => {
             );
         }
 
+        // 1.5. Registrar/Actualizar Historial Médico Detallado
+        // Extraemos campos de antecedentes del body
+        const {
+            antecedentes_personales,
+            antecedentes_familiares,
+            enfermedades_cronicas,
+            cirugias_previas,
+            medicamentos_actuales,
+            vacunas
+        } = req.body;
+
+        await connection.query(
+            `INSERT INTO historial_medico 
+            (id_paciente, antecedentes_personales, antecedentes_familiares, enfermedades_cronicas, cirugias_previas, medicamentos_actuales, vacunas)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            antecedentes_personales = VALUES(antecedentes_personales),
+            antecedentes_familiares = VALUES(antecedentes_familiares),
+            enfermedades_cronicas = VALUES(enfermedades_cronicas),
+            cirugias_previas = VALUES(cirugias_previas),
+            medicamentos_actuales = VALUES(medicamentos_actuales),
+            vacunas = VALUES(vacunas),
+            fecha_actualizacion = CURRENT_TIMESTAMP`,
+            [
+                id_paciente,
+                antecedentes_personales || null,
+                antecedentes_familiares || null,
+                enfermedades_cronicas || null,
+                cirugias_previas || null,
+                medicamentos_actuales || null,
+                vacunas || null
+            ]
+        );
+
         // 2. Construir JSON de signos vitales
         const signos_vitales = JSON.stringify({
             peso: peso || null,
@@ -58,13 +93,15 @@ router.post('/registrar', async (req, res) => {
                 motivo_consulta, sintomas, signos_vitales,
                 diagnostico, tratamiento, receta_medica,
                 observaciones, proxima_cita_recomendada,
+                examenes_solicitados,
                 estado
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'finalizada')`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'finalizada')`,
             [
                 id_cita, id_paciente, id_medico,
                 motivo_consulta, sintomas, signos_vitales,
                 diagnostico, tratamiento, receta_medica,
-                observaciones, proxima_cita || null
+                observaciones, proxima_cita || null,
+                examenes_solicitados || ''
             ]
         );
 

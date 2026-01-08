@@ -3,6 +3,30 @@ import db from '../config/database.js';
 
 const router = express.Router();
 
+// Obtener todos los pacientes (para admin)
+router.get('/', async (req, res) => {
+    try {
+        const [pacientes] = await db.query(
+            `SELECT p.*, u.email, u.estado as usuario_estado
+             FROM paciente p
+             JOIN usuarios u ON p.id_usuario = u.id_usuario
+             ORDER BY p.apellidos ASC`
+        );
+
+        res.json({
+            status: 'OK',
+            data: pacientes
+        });
+    } catch (error) {
+        console.error('Error al obtener pacientes:', error);
+        res.status(500).json({
+            status: 'ERROR',
+            message: 'Error al obtener pacientes',
+            error: error.message
+        });
+    }
+});
+
 // Buscar pacientes
 router.get('/buscar', async (req, res) => {
     try {
