@@ -18,6 +18,13 @@ const AdminDashboard = ({ user, onLogout }) => {
     const [selectedService, setSelectedService] = useState(null);
     const [showEditServiceModal, setShowEditServiceModal] = useState(false);
 
+    // Estados para búsqueda y filtros
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterEspecialidad, setFilterEspecialidad] = useState('');
+    const [filterTurno, setFilterTurno] = useState('');
+    const [filterEstado, setFilterEstado] = useState('');
+    const [filterDepartamento, setFilterDepartamento] = useState('');
+
     const [newDoctor, setNewDoctor] = useState({
         username: '',
         password: '',
@@ -49,7 +56,7 @@ const AdminDashboard = ({ user, onLogout }) => {
     const fetchServices = async () => {
         setLoadingServices(true);
         try {
-            const response = await fetch('http://localhost:5000/api/servicios');
+            const response = await fetch(`${API_BASE_URL}/api/servicios`);
             const result = await response.json();
             if (result.status === 'OK') {
                 setServices(result.data);
@@ -63,7 +70,7 @@ const AdminDashboard = ({ user, onLogout }) => {
 
     const fetchPatients = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/pacientes');
+            const response = await fetch(`${API_BASE_URL}/api/pacientes`);
             const result = await response.json();
             if (result.status === 'OK') {
                 setPatients(result.data);
@@ -75,7 +82,7 @@ const AdminDashboard = ({ user, onLogout }) => {
 
     const fetchDoctors = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/medicos');
+            const response = await fetch(`${API_BASE_URL}/api/medicos`);
             const result = await response.json();
             if (result.status === 'OK') {
                 setDoctors(result.data);
@@ -89,7 +96,7 @@ const AdminDashboard = ({ user, onLogout }) => {
 
     const fetchSpecialties = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/especialidades');
+            const response = await fetch(`${API_BASE_URL}/api/especialidades`);
             const result = await response.json();
             if (result.status === 'OK') {
                 setSpecialties(result.data);
@@ -115,7 +122,7 @@ const AdminDashboard = ({ user, onLogout }) => {
         delete doctorToSave.username;
 
         try {
-            const response = await fetch('http://localhost:5000/api/medicos', {
+            const response = await fetch(`${API_BASE_URL}/api/medicos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(doctorToSave)
@@ -140,7 +147,7 @@ const AdminDashboard = ({ user, onLogout }) => {
     const handleUpdateDoctor = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch(`http://localhost:5000/api/medicos/${selectedDoctor.id_medico}`, {
+            const response = await fetch(`${API_BASE_URL}/api/medicos/${selectedDoctor.id_medico}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(selectedDoctor)
@@ -163,7 +170,7 @@ const AdminDashboard = ({ user, onLogout }) => {
     const handleUpdateService = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch(`http://localhost:5000/api/servicios/${selectedService.id_servicio}`, {
+            const response = await fetch(`${API_BASE_URL}/api/servicios/${selectedService.id_servicio}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(selectedService)
@@ -195,6 +202,48 @@ const AdminDashboard = ({ user, onLogout }) => {
         setShowAddDoctorForm(false);
     };
 
+    // Lógica de filtrado dinámico
+    const filteredPatients = patients.filter(patient => {
+        const matchesSearch = (
+            patient.nombres.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            patient.apellidos.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            patient.dni.includes(searchTerm) ||
+            patient.email.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        return matchesSearch;
+    });
+
+    const filteredDoctors = doctors.filter(doctor => {
+        const matchesSearch = (
+            doctor.nombres.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            doctor.apellidos.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            doctor.numero_colegiatura.includes(searchTerm) ||
+            doctor.email.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        const matchesEspecialidad = !filterEspecialidad || doctor.id_especialidad.toString() === filterEspecialidad;
+        const matchesTurno = !filterTurno || doctor.horario_atencion.includes(filterTurno);
+        return matchesSearch && matchesEspecialidad && matchesTurno;
+    });
+
+    const filteredServices = services.filter(service => {
+        const matchesSearch = service.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesEstado = !filterEstado || service.estado === filterEstado;
+        const matchesDepartamento = !filterDepartamento || service.departamento_nombre === filterDepartamento;
+        return matchesSearch && matchesEstado && matchesDepartamento;
+    });
+
+    // Obtener departamentos únicos para el filtro de servicios
+    const departamentos = [...new Set(services.map(s => s.departamento_nombre))].filter(Boolean);
+
+    // Resetear filtros al cambiar de sección
+    useEffect(() => {
+        setSearchTerm('');
+        setFilterEspecialidad('');
+        setFilterTurno('');
+        setFilterEstado('');
+        setFilterDepartamento('');
+    }, [activeSection]);
+
     return (
         <div className="dashboard admin-dashboard">
             <div className="dashboard-sidebar">
@@ -206,31 +255,57 @@ const AdminDashboard = ({ user, onLogout }) => {
                         className={`nav-item ${activeSection === 'pacientes' ? 'active' : ''}`}
                         onClick={() => setActiveSection('pacientes')}
                     >
-                        👥 Pacientes
+                        <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        Pacientes
                     </button>
                     <button
                         className={`nav-item ${activeSection === 'medicos' ? 'active' : ''}`}
                         onClick={() => setActiveSection('medicos')}
                     >
-                        👨‍⚕️ Médicos
-                    </button>
-                    <button
-                        className={`nav-item ${activeSection === 'reportes' ? 'active' : ''}`}
-                        onClick={() => setActiveSection('reportes')}
-                    >
-                        📊 Reportes
+                        <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <line x1="19" y1="8" x2="19" y2="14"></line>
+                            <line x1="22" y1="11" x2="16" y2="11"></line>
+                        </svg>
+                        Médicos
                     </button>
                     <button
                         className={`nav-item ${activeSection === 'servicios' ? 'active' : ''}`}
                         onClick={() => setActiveSection('servicios')}
                     >
-                        💊 Servicios
+                        <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>
+                        Servicios
                     </button>
                     <button
-                        className={`nav-item ${activeSection === 'configuracion' ? 'active' : ''}`}
-                        onClick={() => setActiveSection('configuracion')}
+                        className={`nav-item ${activeSection === 'reportes' ? 'active' : ''}`}
+                        onClick={() => setActiveSection('reportes')}
                     >
-                        ⚙️ Configuración
+                        <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                        Reportes
+                    </button>
+                    <button
+                        className={`nav-item ${activeSection === 'informacion' ? 'active' : ''}`}
+                        onClick={() => setActiveSection('informacion')}
+                    >
+                        <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                        Información
                     </button>
                 </nav>
                 <div className="sidebar-footer">
@@ -241,22 +316,42 @@ const AdminDashboard = ({ user, onLogout }) => {
             </div>
 
             <div className="dashboard-content">
-                <header className="dashboard-header">
-                    <div>
+                <header className="dashboard-header-modern">
+                    <div className="header-info">
                         <h1>Panel de Administración</h1>
-                        <p>Bienvenido, {user?.nombre || 'Administrador'}</p>
+                        <p>Gestionando {doctors.length} médicos y {patients.length} pacientes registrados.</p>
                     </div>
                 </header>
 
                 <main className="dashboard-main">
                     {activeSection === 'pacientes' && (
                         <div className="section-content">
-                            <h2>Gestión de Pacientes</h2>
+                            <div className="section-header-compact">
+                                <h2>Gestión de Pacientes</h2>
+                                <div className="search-filters-bar">
+                                    <div className="search-input-group">
+                                        <span className="search-icon">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <circle cx="11" cy="11" r="8"></circle>
+                                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                            </svg>
+                                        </span>
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar por nombre, DNI o email..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="search-input"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="historial-list">
-                                {patients.length === 0 ? (
-                                    <p>No hay pacientes registrados.</p>
+                                {filteredPatients.length === 0 ? (
+                                    <p className="empty-state">No se encontraron pacientes que coincidan con la búsqueda.</p>
                                 ) : (
-                                    patients.map(patient => (
+                                    filteredPatients.map(patient => (
                                         <div className="historial-item" key={patient.id_paciente}>
                                             <div className="historial-info">
                                                 <h3>{patient.nombres} {patient.apellidos}</h3>
@@ -277,13 +372,55 @@ const AdminDashboard = ({ user, onLogout }) => {
 
                     {activeSection === 'medicos' && (
                         <div className="section-content">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                            <div className="section-header-compact">
                                 <h2>Gestión de Médicos</h2>
-                                {!showAddDoctorForm && (
-                                    <button className="btn-primary" onClick={() => setShowAddDoctorForm(true)}>
-                                        ➕ Agregar Médico
-                                    </button>
-                                )}
+                                <div className="search-filters-bar">
+                                    <div className="search-input-group">
+                                        <span className="search-icon">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <circle cx="11" cy="11" r="8"></circle>
+                                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                            </svg>
+                                        </span>
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar por nombre, CMP o email..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="search-input"
+                                        />
+                                    </div>
+                                    <div className="filters-group">
+                                        <select
+                                            value={filterEspecialidad}
+                                            onChange={(e) => setFilterEspecialidad(e.target.value)}
+                                            className="filter-select"
+                                        >
+                                            <option value="">Todas las especialidades</option>
+                                            {specialties.map(esp => (
+                                                <option key={esp.id_especialidad} value={esp.id_especialidad}>{esp.nombre}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            value={filterTurno}
+                                            onChange={(e) => setFilterTurno(e.target.value)}
+                                            className="filter-select"
+                                        >
+                                            <option value="">Todos los turnos</option>
+                                            <option value="Mañana">Mañana</option>
+                                            <option value="Tarde">Tarde</option>
+                                        </select>
+                                    </div>
+                                    {!showAddDoctorForm && (
+                                        <button className="btn-primary btn-sm" onClick={() => setShowAddDoctorForm(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                            </svg>
+                                            Agregar Médico
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {showAddDoctorForm && (
@@ -393,8 +530,8 @@ const AdminDashboard = ({ user, onLogout }) => {
 
                             <div className="historial-list">
                                 {loading ? <p>Cargando médicos...</p> :
-                                    doctors.length === 0 ? <p>No hay médicos registrados.</p> :
-                                        doctors.map(doctor => (
+                                    filteredDoctors.length === 0 ? <p className="empty-state">No se encontraron médicos que coincidan con los filtros.</p> :
+                                        filteredDoctors.map(doctor => (
                                             <div className="historial-item" key={doctor.id_medico}>
                                                 <div className="historial-info">
                                                     <h3>{doctor.nombres} {doctor.apellidos}</h3>
@@ -447,11 +584,52 @@ const AdminDashboard = ({ user, onLogout }) => {
 
                     {activeSection === 'servicios' && (
                         <div className="section-content">
-                            <h2>Gestión de Servicios Médicos</h2>
+                            <div className="section-header-compact">
+                                <h2>Gestión de Servicios Médicos</h2>
+                                <div className="search-filters-bar">
+                                    <div className="search-input-group">
+                                        <span className="search-icon">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <circle cx="11" cy="11" r="8"></circle>
+                                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                            </svg>
+                                        </span>
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar servicio..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="search-input"
+                                        />
+                                    </div>
+                                    <div className="filters-group">
+                                        <select
+                                            value={filterDepartamento}
+                                            onChange={(e) => setFilterDepartamento(e.target.value)}
+                                            className="filter-select"
+                                        >
+                                            <option value="">Todos los departamentos</option>
+                                            {departamentos.map(dept => (
+                                                <option key={dept} value={dept}>{dept}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            value={filterEstado}
+                                            onChange={(e) => setFilterEstado(e.target.value)}
+                                            className="filter-select"
+                                        >
+                                            <option value="">Todos los estados</option>
+                                            <option value="activo">Activo</option>
+                                            <option value="inactivo">Inactivo</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="historial-list">
                                 {loadingServices ? <p>Cargando servicios...</p> :
-                                    services.length === 0 ? <p>No hay servicios registrados.</p> :
-                                        services.map(service => (
+                                    filteredServices.length === 0 ? <p className="empty-state">No se encontraron servicios que coincidan con los filtros.</p> :
+                                        filteredServices.map(service => (
                                             <div className="historial-item" key={service.id_servicio}>
                                                 <div className="historial-info">
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -474,29 +652,43 @@ const AdminDashboard = ({ user, onLogout }) => {
                         </div>
                     )}
 
-                    {activeSection === 'configuracion' && (
+                    {activeSection === 'informacion' && (
                         <div className="section-content">
-                            <h2>Configuración del Sistema</h2>
-                            <div className="perfil-card">
-                                <div className="perfil-info">
-                                    <div className="info-item">
-                                        <label>Nombre del Sistema:</label>
-                                        <span>Neo SISOL</span>
+                            <div className="info-modern-section">
+                                <div className="info-header">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1e40af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                    </svg>
+                                    <h2>Información del Sistema</h2>
+                                </div>
+                                <div className="info-grid">
+                                    <div className="info-card">
+                                        <h4>Versión</h4>
+                                        <p>Neo SISOL v2.4.0 (Premium Build)</p>
                                     </div>
-                                    <div className="info-item">
-                                        <label>Versión:</label>
-                                        <span>1.0.0</span>
+                                    <div className="info-card">
+                                        <h4>Servidor</h4>
+                                        <p>Node.js Hyperion Cluster</p>
                                     </div>
-                                    <div className="info-item">
-                                        <label>Sede Principal:</label>
-                                        <span>Central</span>
+                                    <div className="info-card">
+                                        <h4>Base de Datos</h4>
+                                        <p>PostgreSQL High-Availability</p>
                                     </div>
-                                    <div className="info-item">
-                                        <label>Email de Contacto:</label>
-                                        <span>contacto@sisol.gob.pe</span>
+                                    <div className="info-card">
+                                        <h4>Última Actualización</h4>
+                                        <p>{new Date().toLocaleDateString()}</p>
                                     </div>
                                 </div>
-                                <button className="btn-primary">Guardar Cambios</button>
+                                <div className="info-contact-footer">
+                                    <div className="contact-item">
+                                        <strong>Sede Principal:</strong> Central
+                                    </div>
+                                    <div className="contact-item">
+                                        <strong>Email:</strong> contacto@sisol.gob.pe
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}

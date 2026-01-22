@@ -132,11 +132,26 @@
     border-radius: 16px;
     width: 90%;
     max-width: 800px;
-    max-height: 90vh;
-    overflow-y: auto;
+    height: 90vh;
+    /* Fixed height to force internal scroll */
+    overflow: hidden;
+    /* Prevent modal from scrolling */
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
+}
+
+.consulta-modal .modal-header {
+    background: #2EB7F4;
+    color: white;
+    position: relative;
+    /* Remove sticky if modal is fixed */
+    top: auto;
+}
+
+.consulta-modal .modal-header h2,
+.consulta-modal .close-button {
+    color: white !important;
 }
 
 .modal-header {
@@ -205,6 +220,30 @@
 /* Form Styles */
 .consulta-form {
     padding: 32px;
+    flex: 1;
+    overflow-y: auto;
+    background: #f8fafc;
+    /* Custom Scrollbar matching history modal */
+    scrollbar-width: thin;
+    scrollbar-color: #0ea5e9 #f1f5f9;
+}
+
+.consulta-form::-webkit-scrollbar {
+    width: 8px;
+}
+
+.consulta-form::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.consulta-form::-webkit-scrollbar-thumb {
+    background: #0ea5e9;
+    border-radius: 4px;
+}
+
+.consulta-form::-webkit-scrollbar-thumb:hover {
+    background: #0284c7;
 }
 
 .step-content {
@@ -422,9 +461,62 @@
 
 
 /* Historial Modal Styles */
+.historial-modal {
+    background: white;
+    border-radius: 16px;
+    width: 95%;
+    max-width: 900px;
+    height: 85vh;
+    /* Altura fija para forzar el scroll interno */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* El modal no scrolea, scrolea el contenedor */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.historial-modal .modal-header {
+    background: #2EB7F4;
+    color: white;
+    padding: 24px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.historial-modal .modal-header h2 {
+    color: white;
+    margin: 0;
+}
+
+.historial-modal .close-button {
+    color: white !important;
+}
+
 .historial-container {
     padding: 24px;
     background: #f8fafc;
+    flex: 1;
+    overflow-y: auto;
+    /* Aquí es donde ocurre el scroll */
+    scrollbar-width: thin;
+    scrollbar-color: #0ea5e9 #f1f5f9;
+}
+
+/* Estilos para barra de scroll en Chrome/Safari */
+.historial-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.historial-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.historial-container::-webkit-scrollbar-thumb {
+    background: #0ea5e9;
+    border-radius: 4px;
 }
 
 .historial-item {
@@ -531,6 +623,569 @@
 
 .search-form .btn-primary {
     white-space: nowrap;
+}
+
+/* --- Mi Perfil Profesional --- */
+.perfil-layout {
+    max-width: 750px;
+    margin: 0 auto;
+}
+
+.perfil-card.main-profile.compact {
+    padding: 24px;
+}
+
+.perfil-header-enhanced {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 24px;
+}
+
+.avatar-large {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, #00A39C 0%, #008B85 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 163, 156, 0.2);
+}
+
+.header-text h3 {
+    font-size: 24px;
+    color: #1e293b;
+    margin: 0 0 8px 0;
+}
+
+.specialty-badge {
+    display: inline-block;
+    background: #e0f2f1;
+    color: #00796b;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.cmp-tag {
+    color: #64748b;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    margin: 0;
+}
+
+.profile-sections-grid.compact {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+.profile-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.profile-group h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #334155;
+    font-size: 16px;
+    margin: 0 0 8px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.profile-group .icon {
+    font-size: 18px;
+}
+
+.profile-group.full-width {
+    grid-column: span 2;
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.info-item {
+    min-width: 0;
+    /* Permite que el item se encoja correctamente en el grid */
+}
+
+.info-item label {
+    display: block;
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.info-item span {
+    display: block;
+    color: #1e293b;
+    font-weight: 500;
+    word-break: break-word;
+    /* Rompe el texto largo como correos si es necesario */
+    line-height: 1.4;
+}
+
+.price-tag {
+    color: #059669 !important;
+    font-size: 18px;
+    font-weight: 700 !important;
+}
+
+.status-pill {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Professional Profile Redesign */
+.profile-redesign {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 0;
+}
+
+.profile-banner {
+    background: linear-gradient(135deg, #2EB7F4 0%, #0d9488 100%);
+    border-radius: 16px;
+    padding: 40px;
+    color: white;
+    box-shadow: 0 4px 20px rgba(46, 183, 244, 0.2);
+}
+
+.banner-content {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.profile-avatar-wrapper {
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(8px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid rgba(255, 255, 255, 0.5);
+}
+
+.avatar-placeholder svg {
+    width: 50px;
+    height: 50px;
+    color: white;
+}
+
+.banner-info h2 {
+    margin: 0 0 12px 0;
+    font-size: 32px;
+    font-weight: 700;
+    color: white;
+}
+
+.banner-badges {
+    display: flex;
+    gap: 12px;
+}
+
+.badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-specialty {
+    background: white;
+    color: #2EB7F4;
+}
+
+.badge-cmp {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.kpi-summary {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+/* Dashboard Modernization */
+.dashboard-header-modern {
+    background: white;
+    padding: 24px 32px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 24px;
+}
+
+.dashboard-header-modern h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 4px 0;
+}
+
+.dashboard-header-modern p {
+    color: #64748b;
+    font-size: 15px;
+    margin: 0;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+}
+
+/* Exam Request Section */
+.exam-request-section {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 20px;
+    margin-top: 20px;
+}
+
+.checkbox-wrapper-modern {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    cursor: pointer;
+}
+
+.checkbox-wrapper-modern input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.checkbox-wrapper-modern label {
+    font-weight: 600;
+    color: #334155;
+    margin: 0;
+    cursor: pointer;
+}
+
+.examen-solicitud-box {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+}
+
+.examen-input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    align-items: flex-end;
+}
+
+.btn-add-examen {
+    height: 42px;
+    width: 42px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+/* Upload File Box */
+.upload-file-box {
+    background: #f8fafc;
+    border: 2px dashed #cbd5e0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.upload-file-box h4 {
+    margin: 0 0 16px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.upload-form {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.upload-group-file {
+    flex: 1;
+    min-width: 200px;
+}
+
+.upload-group-type {
+    width: 140px;
+}
+
+.upload-group-desc {
+    flex: 2;
+    min-width: 200px;
+}
+
+.upload-form label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.upload-form input,
+.upload-form select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.btn-upload {
+    height: 42px;
+    padding: 0 24px;
+}
+
+/* Notification Header Actions */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Sidebar Nav Badge */
+.nav-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.nav-badge {
+    position: absolute;
+    top: -2px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 2px solid #2EB7F4;
+    /* Sidebar background color for contrast */
+}
+
+.nav-item.active .nav-badge {
+    border-color: white;
+    /* Contrast when active */
+}
+
+/* Icon Utilities */
+.icon-tiny {
+    width: 16px;
+    height: 16px;
+    vertical-align: text-bottom;
+    margin-right: 6px;
+}
+
+.paciente-avatar svg {
+    width: 24px;
+    height: 24px;
+    color: #4a5568;
+}
+
+/* Agenda Status Badges */
+.historial-status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.historial-status.programada {
+    background: #ebf8ff;
+    color: #3182ce;
+}
+
+.historial-status.confirmada {
+    background: #f0fff4;
+    color: #38a169;
+}
+
+.historial-status.cancelada {
+    background: #fff5f5;
+    color: #e53e3e;
+}
+
+.kpi-card {
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.kpi-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.05);
+    border-color: #2EB7F4;
+}
+
+.kpi-icon {
+    font-size: 32px;
+    background: #f8fafc;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.kpi-data {
+    display: flex;
+    flex-direction: column;
+}
+
+.kpi-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.kpi-label {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.perfil-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+.info-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+
+.info-card .card-header {
+    background: #f8fafc;
+    padding: 16px 24px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #1e293b;
+    font-weight: 700;
+}
+
+.card-icon {
+    width: 20px;
+    height: 20px;
+    color: #2EB7F4;
+}
+
+.card-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.data-item label {
+    display: block;
+    font-size: 12px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.data-item p {
+    margin: 0;
+    color: #1e293b;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.price-text {
+    font-size: 20px !important;
+    color: #0d9488 !important;
+    font-weight: 700 !important;
+}
+
+.status-tag {
+    display: inline-flex;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.status-tag.activo {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.status-tag.inactivo {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+@media (max-width: 1024px) {
+    .kpi-summary {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .banner-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .perfil-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-banner {
+        padding: 24px;
+    }
 }
 
 /* Patient Medical Profile Modal */

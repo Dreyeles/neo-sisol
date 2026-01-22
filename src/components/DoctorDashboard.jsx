@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { jsPDF } from "jspdf";
 import './Dashboard.css'; // Reusing existing dashboard styles
+import API_BASE_URL from '../config';
 import './DoctorDashboard.css'; // Doctor-specific styles
 import LogoutIcon from './LogoutIcon';
 
@@ -8,13 +9,14 @@ const DoctorDashboard = ({ user, onLogout }) => {
     const [activeSection, setActiveSection] = useState('agenda');
     const [citas, setCitas] = useState([]);
     const [loadingCitas, setLoadingCitas] = useState(false);
+    const [especialidadNombre, setEspecialidadNombre] = useState('Cargando...');
 
     // Cargar citas del médico
     const fetchCitas = async () => {
         if (!user?.id_medico) return;
         setLoadingCitas(true);
         try {
-            const response = await fetch(`http://localhost:5000/api/citas/medico/${user.id_medico}`);
+            const response = await fetch(`${API_BASE_URL}/api/citas/medico/${user.id_medico}`);
             const data = await response.json();
             if (data.status === 'OK') {
                 setCitas(data.data);
@@ -34,7 +36,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
         if (!user?.id_medico) return;
         setLoadingPacientes(true);
         try {
-            const response = await fetch(`http://localhost:5000/api/medicos/${user.id_medico}/pacientes`);
+            const response = await fetch(`${API_BASE_URL}/api/medicos/${user.id_medico}/pacientes`);
             const data = await response.json();
             if (data.status === 'OK') {
                 setPacientes(data.data);
@@ -47,10 +49,27 @@ const DoctorDashboard = ({ user, onLogout }) => {
     };
 
     useEffect(() => {
+        const fetchEspecialidad = async () => {
+            if (!user?.id_especialidad) return;
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/especialidades`);
+                const data = await response.json();
+                if (data.status === 'OK') {
+                    const esp = data.data.find(e => e.id_especialidad === user.id_especialidad);
+                    if (esp) setEspecialidadNombre(esp.nombre);
+                }
+            } catch (error) {
+                console.error('Error al cargar especialidad:', error);
+                setEspecialidadNombre('No disponible');
+            }
+        };
+
         if (activeSection === 'agenda') {
             fetchCitas();
         } else if (activeSection === 'pacientes') {
             fetchPacientes();
+        } else if (activeSection === 'perfil') {
+            fetchEspecialidad();
         }
     }, [user, activeSection]);
 
@@ -159,11 +178,11 @@ const DoctorDashboard = ({ user, onLogout }) => {
         // Fetch patient data for context
         try {
             // Obtain blood type from profile
-            const profileResp = await fetch(`http://localhost:5000/api/pacientes/perfil-medico/${cita.id_paciente}`);
+            const profileResp = await fetch(`${API_BASE_URL}/api/pacientes/perfil-medico/${cita.id_paciente}`);
             const profileData = await profileResp.json();
 
             // Obtain history for previous vitals
-            const historyResp = await fetch(`http://localhost:5000/api/atencion/historial/${cita.id_paciente}`);
+            const historyResp = await fetch(`${API_BASE_URL}/api/atencion/historial/${cita.id_paciente}`);
             const historyData = await historyResp.json();
 
             let bloodType = '';
@@ -218,9 +237,6 @@ const DoctorDashboard = ({ user, onLogout }) => {
         }
     };
 
-    const handleVerHistoria = () => {
-        alert("El paciente no cuenta con una historia clínica registrada en el sistema aún.");
-    };
 
     const [showHistorialModal, setShowHistorialModal] = useState(false);
     const [historialData, setHistorialData] = useState([]);
@@ -234,7 +250,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
         setPacienteHistorial(pacienteObj);
 
         try {
-            const response = await fetch(`http://localhost:5000/api/atencion/historial/${id_paciente}`);
+            const response = await fetch(`${API_BASE_URL}/api/atencion/historial/${id_paciente}`);
             const data = await response.json();
             if (data.status === 'OK') {
                 setHistorialData(data.data);
@@ -247,7 +263,6 @@ const DoctorDashboard = ({ user, onLogout }) => {
             alert('Error de conexión al cargar historial');
         }
     };
-
     const generarPDF = (atencion, tipo) => {
         const doc = new jsPDF();
         const pacienteNombre = `${pacienteHistorial?.nombres || 'Paciente'} ${pacienteHistorial?.apellidos || ''}`;
@@ -432,7 +447,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
             if (searchTerm) queryParams.append('q', searchTerm);
             if (searchDate) queryParams.append('fecha', searchDate);
 
-            const response = await fetch(`http://localhost:5000/api/pacientes/buscar?${queryParams}`);
+            const response = await fetch(`${API_BASE_URL}/api/pacientes/buscar?${queryParams}`);
             const data = await response.json();
 
             if (data.status === 'OK') {
@@ -462,7 +477,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
     const fetchArchivosPaciente = async (id_paciente) => {
         setLoadingArchivos(true);
         try {
-            const response = await fetch(`http://localhost:5000/api/archivos/paciente/${id_paciente}`);
+            const response = await fetch(`${API_BASE_URL}/api/archivos/paciente/${id_paciente}`);
             const data = await response.json();
             if (data.status === 'OK') {
                 setArchivosPaciente(data.data);
@@ -493,7 +508,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
         formData.append('descripcion', fileDesc);
 
         try {
-            const response = await fetch('http://localhost:5000/api/archivos/upload', {
+            const response = await fetch(`${API_BASE_URL}/api/archivos/upload`, {
                 method: 'POST',
                 body: formData
             });
@@ -520,7 +535,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
 
     const handleVerPerfilMedico = async (id_paciente) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/pacientes/perfil-medico/${id_paciente}`);
+            const response = await fetch(`${API_BASE_URL}/api/pacientes/perfil-medico/${id_paciente}`);
             const data = await response.json();
 
             if (data.status === 'OK') {
@@ -549,7 +564,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
     useEffect(() => {
         const fetchDepartamentos = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/servicios/departamentos');
+                const response = await fetch(`${API_BASE_URL}/api/servicios/departamentos`);
                 const data = await response.json();
                 if (data.status === 'OK') {
                     setDepartamentos(data.data);
@@ -572,7 +587,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
         }
 
         try {
-            const response = await fetch(`http://localhost:5000/api/servicios/por-departamento/${id_depto}`);
+            const response = await fetch(`${API_BASE_URL}/api/servicios/por-departamento/${id_depto}`);
             const data = await response.json();
             if (data.status === 'OK') {
                 setServiciosExamen(data.data);
@@ -616,7 +631,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
     const handleSubmitConsulta = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:5000/api/atencion/registrar', {
+            const response = await fetch(`${API_BASE_URL}/api/atencion/registrar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -660,7 +675,6 @@ const DoctorDashboard = ({ user, onLogout }) => {
             alert('Error de conexión al registrar atención');
         }
     };
-
     return (
         <div className="dashboard doctor-dashboard">
             <div className="dashboard-sidebar">
@@ -672,25 +686,51 @@ const DoctorDashboard = ({ user, onLogout }) => {
                         className={`nav-item ${activeSection === 'agenda' ? 'active' : ''}`}
                         onClick={() => setActiveSection('agenda')}
                     >
-                        📅 Mi Agenda
+                        <div className="nav-icon-wrapper">
+                            <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                            {agendaDelDia.length > 0 && <span className="nav-badge"></span>}
+                        </div>
+                        Mi Agenda
                     </button>
                     <button
                         className={`nav-item ${activeSection === 'pacientes' ? 'active' : ''}`}
                         onClick={() => setActiveSection('pacientes')}
                     >
-                        👥 Mis Pacientes
+                        <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        Mis Pacientes
                     </button>
                     <button
                         className={`nav-item ${activeSection === 'historial' ? 'active' : ''}`}
                         onClick={() => setActiveSection('historial')}
                     >
-                        📋 Historial Médico
+                        <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                            <polyline points="10 9 9 9 8 9" />
+                        </svg>
+                        Historial Médico
                     </button>
                     <button
                         className={`nav-item ${activeSection === 'perfil' ? 'active' : ''}`}
                         onClick={() => setActiveSection('perfil')}
                     >
-                        👤 Mi Perfil
+                        <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        Mi Perfil
                     </button>
                 </nav>
                 <div className="sidebar-footer">
@@ -701,10 +741,13 @@ const DoctorDashboard = ({ user, onLogout }) => {
             </div>
 
             <div className="dashboard-content">
-                <header className="dashboard-header">
-                    <div>
-                        <h1>Bienvenido, Dr. {user?.nombres || user?.nombre || 'Médico'}</h1>
-                        <p>Panel Médico</p>
+                <header className="dashboard-header-modern">
+                    <div className="header-info">
+                        <h1>Hola, Dr. {user?.nombres || 'Médico'}</h1>
+                        <p>{agendaDelDia.length > 0
+                            ? `Tienes ${agendaDelDia.length} ${agendaDelDia.length === 1 ? 'cita programada' : 'citas programadas'} para hoy.`
+                            : 'No tienes citas programadas para hoy.'}
+                        </p>
                     </div>
                 </header>
 
@@ -721,8 +764,21 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                             <div className="cita-info">
                                                 <h3>Paciente: {cita.paciente_nombre} {cita.paciente_apellido}</h3>
                                                 <p>Motivo: {cita.motivo_consulta}</p>
-                                                <p className="cita-fecha">📅 {cita.fechaFormatted} - 🕒 {cita.hora_cita}</p>
-                                                <span className={`historial-status ${cita.estado}`}>{cita.estado}</span>
+                                                <p className="cita-fecha">
+                                                    <svg className="icon-tiny" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                                        <line x1="16" y1="2" x2="16" y2="6" />
+                                                        <line x1="8" y1="2" x2="8" y2="6" />
+                                                        <line x1="3" y1="10" x2="21" y2="10" />
+                                                    </svg>
+                                                    {cita.fechaFormatted} -
+                                                    <svg className="icon-tiny" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: '10px' }}>
+                                                        <circle cx="12" cy="12" r="10" />
+                                                        <polyline points="12 6 12 12 16 14" />
+                                                    </svg>
+                                                    {cita.hora_cita}
+                                                </p>
+                                                <span className={`historial - status ${cita.estado} `}>{cita.estado}</span>
                                             </div>
                                             <div className="cita-actions">
                                                 <button
@@ -733,7 +789,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                                 </button>
                                                 <button
                                                     className="btn-secondary"
-                                                    onClick={handleVerHistoria}
+                                                    onClick={() => handleVerPerfilMedico(cita.id_paciente)}
                                                 >
                                                     Ver Historia
                                                 </button>
@@ -758,7 +814,12 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                 ) : pacientes.length > 0 ? (
                                     pacientes.map(pte => (
                                         <div className="paciente-card" key={pte.id_paciente}>
-                                            <div className="paciente-avatar">👤</div>
+                                            <div className="paciente-avatar">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                                    <circle cx="12" cy="7" r="4" />
+                                                </svg>
+                                            </div>
                                             <div className="paciente-info">
                                                 <h3>{pte.nombres} {pte.apellidos}</h3>
                                                 <p>DNI: {pte.dni}</p>
@@ -797,7 +858,11 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                         onChange={(e) => setSearchDate(e.target.value)}
                                         className="search-input"
                                     />
-                                    <button className="btn-primary" onClick={handleSearchPacientes}>
+                                    <button className="btn-primary" onClick={handleSearchPacientes} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <circle cx="11" cy="11" r="8" />
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                        </svg>
                                         Buscar
                                     </button>
                                 </div>
@@ -830,22 +895,105 @@ const DoctorDashboard = ({ user, onLogout }) => {
                     )}
 
                     {activeSection === 'perfil' && (
-                        <div className="section-content">
-                            <h2>Mi Perfil Profesional</h2>
-                            <div className="perfil-card">
-                                <div className="perfil-header">
-                                    <div className="avatar">👨‍⚕️</div>
-                                    <h3>Dr. {user?.nombres} {user?.apellidos}</h3>
-                                    <p>Especialidad ID: {user?.id_especialidad}</p>
-                                </div>
-                                <div className="perfil-info">
-                                    <div className="info-item">
-                                        <label>Email:</label>
-                                        <span>{user?.email}</span>
+                        <div className="section-content profile-redesign">
+                            <div className="profile-banner">
+                                <div className="banner-content">
+                                    <div className="profile-avatar-wrapper">
+                                        <div className="avatar-placeholder">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                                <circle cx="12" cy="7" r="4" />
+                                            </svg>
+                                        </div>
                                     </div>
-                                    <div className="info-item">
-                                        <label>Teléfono:</label>
-                                        <span>{user?.telefono || 'No registrado'}</span>
+                                    <div className="banner-info">
+                                        <h2>Dr. {user?.nombres} {user?.apellidos}</h2>
+                                        <div className="banner-badges">
+                                            <span className="badge badge-specialty">{especialidadNombre}</span>
+                                            <span className="badge badge-cmp">{user?.numero_colegiatura}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="kpi-summary">
+                                <div className="kpi-card">
+                                    <div className="kpi-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                            <line x1="16" y1="2" x2="16" y2="6" />
+                                            <line x1="8" y1="2" x2="8" y2="6" />
+                                            <line x1="3" y1="10" x2="21" y2="10" />
+                                        </svg>
+                                    </div>
+                                    <div className="kpi-data">
+                                        <span className="kpi-value">{citas.length}</span>
+                                        <span className="kpi-label">Citas de Hoy</span>
+                                    </div>
+                                </div>
+                                <div className="kpi-card">
+                                    <div className="kpi-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                            <circle cx="9" cy="7" r="4" />
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                        </svg>
+                                    </div>
+                                    <div className="kpi-data">
+                                        <span className="kpi-value">{pacientes.length}</span>
+                                        <span className="kpi-label">Pacientes Totales</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="perfil-info-grid">
+                                <div className="info-card">
+                                    <div className="card-header">
+                                        <svg className="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <polyline points="12 6 12 12 16 14" />
+                                        </svg>
+                                        <span>Horario y Modalidad</span>
+                                    </div>
+                                    <div className="card-body">
+                                        <div className="data-item">
+                                            <label>Turno de Atención</label>
+                                            <p>{user?.horario_atencion || 'No asignado'}</p>
+                                        </div>
+                                        <div className="data-item">
+                                            <label>Costo de Consulta</label>
+                                            <p className="price-text">S/. {user?.costo_consulta ? parseFloat(user.costo_consulta).toFixed(2) : '0.00'}</p>
+                                        </div>
+                                        <div className="data-item">
+                                            <label>Estado</label>
+                                            <span className={`status - tag ${user?.estado} `}>
+                                                {user?.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="info-card">
+                                    <div className="card-header">
+                                        <svg className="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                                        </svg>
+                                        <span>Contacto Directo</span>
+                                    </div>
+                                    <div className="card-body">
+                                        <div className="data-item">
+                                            <label>Correo Institucional</label>
+                                            <p>{user?.email}</p>
+                                        </div>
+                                        <div className="data-item">
+                                            <label>Teléfono Fijo</label>
+                                            <p>{user?.telefono || 'No registrado'}</p>
+                                        </div>
+                                        <div className="data-item">
+                                            <label>Celular</label>
+                                            <p>{user?.celular || 'No registrado'}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -864,13 +1012,13 @@ const DoctorDashboard = ({ user, onLogout }) => {
                         </div>
 
                         <div className="stepper">
-                            <div className={`step ${consultaStep >= 1 ? 'active' : ''}`}>1. Triaje</div>
+                            <div className={`step ${consultaStep >= 1 ? 'active' : ''} `}>1. Triaje</div>
                             <div className="line"></div>
-                            <div className={`step ${consultaStep >= 2 ? 'active' : ''}`}>2. Antecedentes</div>
+                            <div className={`step ${consultaStep >= 2 ? 'active' : ''} `}>2. Antecedentes</div>
                             <div className="line"></div>
-                            <div className={`step ${consultaStep >= 3 ? 'active' : ''}`}>3. Diagnóstico</div>
+                            <div className={`step ${consultaStep >= 3 ? 'active' : ''} `}>3. Diagnóstico</div>
                             <div className="line"></div>
-                            <div className={`step ${consultaStep >= 4 ? 'active' : ''}`}>4. Tratamiento</div>
+                            <div className={`step ${consultaStep >= 4 ? 'active' : ''} `}>4. Tratamiento</div>
                         </div>
 
                         <form onSubmit={handleSubmitConsulta} className="consulta-form">
@@ -1079,22 +1227,21 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                     </div>
 
                                     {/* Sección de Exámenes Auxiliares */}
-                                    <div className="form-group" style={{ borderTop: '1px solid #e2e8f0', paddingTop: '15px', marginTop: '10px' }}>
-                                        <div className="checkbox-wrapper" style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                                    <div className="exam-request-section">
+                                        <div className="checkbox-wrapper-modern">
                                             <input
                                                 type="checkbox"
                                                 id="chkSolicitarExamen"
                                                 checked={solicitarExamen}
                                                 onChange={(e) => setSolicitarExamen(e.target.checked)}
-                                                style={{ width: 'auto', marginRight: '10px' }}
                                             />
-                                            <label htmlFor="chkSolicitarExamen" style={{ fontWeight: 'bold', cursor: 'pointer', margin: 0 }}>Solicitar Exámenes Auxiliares</label>
+                                            <label htmlFor="chkSolicitarExamen">Solicitar Exámenes Auxiliares</label>
                                         </div>
 
                                         {solicitarExamen && (
-                                            <div className="examen-solicitud-box" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
-                                                <div className="form-row" style={{ alignItems: 'flex-end' }}>
-                                                    <div className="form-group" style={{ flex: 1 }}>
+                                            <div className="examen-solicitud-box">
+                                                <div className="examen-input-grid">
+                                                    <div className="form-group">
                                                         <label>Departamento</label>
                                                         <select value={examenDepto} onChange={handleDeptoChange}>
                                                             <option value="">Seleccione Departamento</option>
@@ -1103,7 +1250,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                                             ))}
                                                         </select>
                                                     </div>
-                                                    <div className="form-group" style={{ flex: 1 }}>
+                                                    <div className="form-group">
                                                         <label>Servicio / Examen</label>
                                                         <select value={examenServicio} onChange={(e) => setExamenServicio(e.target.value)} disabled={!examenDepto}>
                                                             <option value="">Seleccione Examen</option>
@@ -1114,12 +1261,11 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                                             ))}
                                                         </select>
                                                     </div>
-                                                    <div className="form-group" style={{ width: 'auto' }}>
+                                                    <div className="add-examen-btn-wrapper">
                                                         <button
                                                             type="button"
-                                                            className="btn-primary"
+                                                            className="btn-primary btn-add-examen"
                                                             onClick={handleAgregarExamen}
-                                                            style={{ padding: '10px 15px', height: '42px', marginTop: '0' }}
                                                         >
                                                             +
                                                         </button>
@@ -1307,16 +1453,16 @@ const DoctorDashboard = ({ user, onLogout }) => {
                             {/* Sección de Archivos Adjuntos */}
                             <div className="perfil-section">
                                 <h3>Archivos Adjuntos</h3>
-                                <div style={{ marginBottom: '15px', padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e0' }}>
-                                    <h4 style={{ fontSize: '14px', marginBottom: '10px' }}>Adjuntar Nuevo Archivo</h4>
-                                    <form onSubmit={handleUploadArchivo} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                                        <div style={{ flex: 1 }}>
-                                            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>Archivo</label>
-                                            <input id="fileInput" type="file" onChange={handleFileChange} required style={{ fontSize: '13px' }} />
+                                <div className="upload-file-box">
+                                    <h4>Adjuntar Nuevo Archivo</h4>
+                                    <form onSubmit={handleUploadArchivo} className="upload-form">
+                                        <div className="upload-group-file">
+                                            <label>Archivo</label>
+                                            <input id="fileInput" type="file" onChange={handleFileChange} required />
                                         </div>
-                                        <div style={{ width: '120px' }}>
-                                            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>Tipo</label>
-                                            <select value={fileType} onChange={(e) => setFileType(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e0' }}>
+                                        <div className="upload-group-type">
+                                            <label>Tipo</label>
+                                            <select value={fileType} onChange={(e) => setFileType(e.target.value)}>
                                                 <option value="Informe">Informe</option>
                                                 <option value="Laboratorio">Laboratorio</option>
                                                 <option value="Imagen">Imagen</option>
@@ -1324,11 +1470,11 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                                 <option value="Otro">Otro</option>
                                             </select>
                                         </div>
-                                        <div style={{ flex: '2 1 200px' }}>
-                                            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>Descripción</label>
-                                            <input type="text" value={fileDesc} onChange={(e) => setFileDesc(e.target.value)} placeholder="Descripción opcional" style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e0' }} />
+                                        <div className="upload-group-desc">
+                                            <label>Descripción</label>
+                                            <input type="text" value={fileDesc} onChange={(e) => setFileDesc(e.target.value)} placeholder="Descripción opcional" />
                                         </div>
-                                        <button type="submit" disabled={uploadingFile} className="btn-primary" style={{ padding: '8px 15px', height: '35px' }}>
+                                        <button type="submit" disabled={uploadingFile} className="btn-primary btn-upload">
                                             {uploadingFile ? 'Subiendo...' : 'Subir'}
                                         </button>
                                     </form>
@@ -1342,21 +1488,21 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                             {archivosPaciente.map(file => (
                                                 <div key={file.id_archivo} style={{ border: '1px solid #e2e8f0', borderRadius: '6px', padding: '10px', background: 'white' }}>
                                                     <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '5px', color: '#2b6cb0' }}>{file.tipo_documento}</div>
-                                                    <a href={`http://localhost:5000${file.ruta_archivo}`} target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginBottom: '5px', fontSize: '13px', textDecoration: 'none', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    <a href={`${API_BASE_URL}${file.ruta_archivo}`} target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginBottom: '5px', fontSize: '13px', textDecoration: 'none', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                         📄 {file.nombre_original}
-                                                    </a>
+                                                    </a >
                                                     {file.descripcion && <p style={{ fontSize: '12px', color: '#666', margin: '0 0 5px 0' }}>{file.descripcion}</p>}
-                                                    <div style={{ fontSize: '11px', color: '#999' }}>
+                                                    < div style={{ fontSize: '11px', color: '#999' }}>
                                                         {new Date(file.fecha_subida).toLocaleDateString()}
-                                                    </div>
-                                                </div>
+                                                    </div >
+                                                </div >
                                             ))}
-                                        </div>
+                                        </div >
                                     ) : (
                                         <p className="text-muted">No hay archivos adjuntos.</p>
                                     )}
-                                </div>
-                            </div>
+                                </div >
+                            </div >
 
                             <div className="perfil-actions" style={{ marginTop: '20px', textAlign: 'right' }}>
                                 <button
@@ -1370,11 +1516,11 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                     Ver Atenciones Previas
                                 </button>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </div >
+                    </div >
+                </div >
             )}
-        </div>
+        </div >
     );
 };
 

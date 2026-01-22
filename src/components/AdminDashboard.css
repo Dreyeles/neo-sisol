@@ -1,12 +1,14 @@
 .dashboard {
     display: flex;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     background: #f5f7fa;
 }
 
 /* Sidebar - Admin colors */
 .admin-dashboard .dashboard-sidebar {
     width: 280px;
+    height: 100vh;
     background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
     color: white;
     display: flex;
@@ -61,6 +63,12 @@
     font-weight: 600;
 }
 
+.admin-dashboard .nav-icon {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+}
+
 .admin-dashboard .sidebar-footer {
     padding: 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.2);
@@ -101,6 +109,30 @@
     background: #1e3a8a;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+}
+
+/* Dashboard Modernization */
+.admin-dashboard .dashboard-header-modern {
+    background: white;
+    padding: 24px 32px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.admin-dashboard .header-info h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 4px 0;
+}
+
+.admin-dashboard .header-info p {
+    color: #64748b;
+    font-size: 15px;
+    margin: 0;
 }
 
 /* Stats cards - Admin colors */
@@ -157,6 +189,95 @@
 .btn-danger {
     background: #ef4444;
     color: white;
+}
+
+/* --- Search & Filters Bar --- */
+.section-header-compact {
+    margin-bottom: 24px;
+}
+
+.search-filters-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    background: white;
+    padding: 16px 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+    margin-top: 12px;
+}
+
+.search-input-group {
+    flex: 1;
+    min-width: 250px;
+    display: flex;
+    align-items: center;
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 0 12px;
+    transition: all 0.3s ease;
+}
+
+.search-input-group:focus-within {
+    border-color: #1e40af;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+}
+
+.search-icon {
+    font-size: 16px;
+    margin-right: 8px;
+    color: #9ca3af;
+}
+
+.search-input {
+    width: 100%;
+    border: none !important;
+    background: transparent !important;
+    padding: 10px 0 !important;
+    font-size: 14px;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.filters-group {
+    display: flex;
+    gap: 12px;
+}
+
+.filter-select {
+    padding: 10px 32px 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #f9fafb;
+    color: #374151;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.filter-select:focus {
+    border-color: #1e40af;
+    background: white;
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 48px;
+    background: white;
+    border-radius: 12px;
+    color: #6b7280;
+    font-size: 16px;
+    border: 2px dashed #e5e7eb;
 }
 
 /* Pre-formatted Email Input */
@@ -344,6 +465,88 @@
     to {
         transform: translateY(0);
         opacity: 1;
+    }
+}
+
+/* Informacion Section Modernization */
+.info-modern-section {
+    background: white;
+    padding: 32px;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.info-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.info-header h2 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 24px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.info-card {
+    background: #f8fafc;
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.info-card h4 {
+    margin: 0 0 8px 0;
+    color: #64748b;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.info-card p {
+    margin: 0;
+    color: #1e3a8a;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.info-contact-footer {
+    display: flex;
+    gap: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.contact-item {
+    font-size: 15px;
+    color: #475569;
+}
+
+.contact-item strong {
+    color: #1e293b;
+    margin-right: 8px;
+}
+
+@media (max-width: 640px) {
+    .info-contact-footer {
+        flex-direction: column;
+        gap: 12px;
     }
 }
 
