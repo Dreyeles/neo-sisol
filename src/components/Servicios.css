@@ -75,38 +75,107 @@
   font-weight: 500;
 }
 
+.scroll-indicator {
+  display: none;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .servicios {
-    padding: 60px 20px;
+    padding: 60px 0;
+  }
+
+  .servicios-container {
+    padding: 0 20px;
   }
 
   .servicios-title {
     font-size: 28px;
+    text-align: center;
   }
 
   .servicios-subtitle {
+    text-align: center;
     font-size: 16px;
+    padding: 0 20px;
   }
 
   .servicios-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
     gap: 16px;
+    padding: 10px 20px 30px 20px;
+    -webkit-overflow-scrolling: touch;
+    margin: 0;
+    width: 100%;
+    grid-template-columns: none;
+    box-sizing: border-box;
+  }
+
+  /* Hide scrollbar */
+  .servicios-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .servicios-grid {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
   .servicio-card {
-    padding: 20px;
+    min-width: 260px;
+    width: 260px;
+    padding: 24px;
+    scroll-snap-align: center;
+    flex-shrink: 0;
+    background: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    /* Lighter shadow for mobile */
+    margin: 0;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .servicio-nombre {
+    text-align: center;
+    font-size: 16px;
+  }
+
+  .servicio-info {
+    justify-content: center;
+  }
+
+  .scroll-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: -30px;
+    margin-bottom: 20px;
+    color: #00A39C;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.8;
+  }
+
+  .swipe-finger {
+    width: 24px;
+    height: 24px;
+    animation: swipeAnim 2s ease-in-out infinite;
+  }
+
+  @keyframes swipeAnim {
+
+    0%,
+    100% {
+      transform: translateX(-10px);
+    }
+
+    50% {
+      transform: translateX(10px);
+    }
   }
 }
-
-@media (max-width: 480px) {
-  .servicios-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .servicios-title {
-    font-size: 24px;
-  }
-}
-
-

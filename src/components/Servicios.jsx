@@ -71,6 +71,17 @@ const Servicios = ({ isOpen, onToggle }) => {
         </div>
 
         {isOpen && (
+          <div className="scroll-indicator">
+            <div className="swipe-finger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 12h20M18 8l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+            </div>
+            <span>Desliza para ver más</span>
+          </div>
+        )}
+
+        {isOpen && (
           <div className="servicios-grid">
             {servicios.map((servicio, index) => (
               <div key={index} className="servicio-card">

@@ -1,8 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 // import { Lock } from 'lucide-react';
 import './Hero.css';
 
-const Hero = ({ onAgendarCitaClick, onRegisterClick }) => {
+const Hero = ({ onAgendarCitaClick }) => {
   return (
     <section className="hero" id="inicio">
       <div className="hero-container">
@@ -13,7 +13,7 @@ const Hero = ({ onAgendarCitaClick, onRegisterClick }) => {
               Salud accesible, sin esperas
             </h1>
             <p className="hero-description">
-              Agenda tus citas médicas en SISOL con nuestra nueva plataforma web: segura, rápida y pensada para todos.
+              Agenda tus citas m├®dicas en SISOL con nuestra nueva plataforma web: segura, r├ípida y pensada para todos.
             </p>
             <div className="hero-buttons">
               <button
@@ -26,21 +26,16 @@ const Hero = ({ onAgendarCitaClick, onRegisterClick }) => {
                   }
                 }}
               >
-                <span className="desktop-text">Agendar Cita</span>
-                <span className="mobile-text">Iniciar Sesión</span>
+                Agendar Cita
               </button>
               <button
                 className="hero-button-secondary"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (onRegisterClick) {
-                    onRegisterClick();
-                  }
                 }}
               >
-                <span className="desktop-text">Conocer Más</span>
-                <span className="mobile-text">Registrarse</span>
+                Conocer M├ís
               </button>
             </div>
             <div className="hero-stats">
@@ -54,46 +49,34 @@ const Hero = ({ onAgendarCitaClick, onRegisterClick }) => {
               </div>
               <div className="stat-item">
                 <div className="stat-number">24/7</div>
-                <div className="stat-label">Atención</div>
+                <div className="stat-label">Atenci├│n</div>
               </div>
             </div>
           </div>
           <div className="hero-image">
             <div className="hero-image-container">
               <div className="medical-icon">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <svg viewBox="0 0 100 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 12h20l4-8 4 16 4-8h15l4-8 4 16 4-8h20l4-8 4 16 4-8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
               <div className="floating-card card-1">
                 <div className="card-icon">
-                  <img src="/lightning-icon.png" alt="Más rápido" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+                  <img src="/lightning-icon.png" alt="M├ís r├ípido" />
                 </div>
-                <div className="card-text">Más rápido</div>
+                <div className="card-text">M├ís r├ípido</div>
               </div>
               <div className="floating-card card-2">
                 <div className="card-icon">
-                  <img src="/cursor-icon.png" alt="Más fácil" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                  <div className="cursor-icon-mask" role="img" aria-label="M├ís f├ícil" />
                 </div>
-                <div className="card-text">Más fácil</div>
+                <div className="card-text">M├ís f├ícil</div>
               </div>
               <div className="floating-card card-3">
                 <div className="card-icon">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    style={{ color: '#1e3a8a', width: '55px', height: '55px', minWidth: '55px', minHeight: '55px' }}
-                  >
-                    <path
-                      d="M12 2C9.243 2 7 4.243 7 7v3H6c-1.103 0-2 .897-2 2v8c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2v-8c0-1.103-.897-2-2-2h-1V7c0-2.757-2.243-5-5-5zm3 8H9V7c0-1.654 1.346-3 3-3s3 1.346 3 3v3z"
-                      fill="currentColor"
-                    />
-                  </svg>
+                  <div className="secure-icon-mask" role="img" aria-label="M├ís seguro" />
                 </div>
-                <div className="card-text">Más seguro</div>
+                <div className="card-text">M├ís seguro</div>
               </div>
             </div>
           </div>
@@ -109,3 +92,4 @@ const Hero = ({ onAgendarCitaClick, onRegisterClick }) => {
 };
 
 export default Hero;
+

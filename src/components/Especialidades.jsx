@@ -10,11 +10,11 @@ const Especialidades = () => {
     { nombre: 'Cardiología', establecimientos: 29 },
     { nombre: 'Cirugía Cabeza y Cuello', establecimientos: 11 },
     { nombre: 'Cirugía General', establecimientos: 24 },
-    { nombre: 'Cirugia Pediatrica', establecimientos: 8 },
+    { nombre: 'Cirugía Pediátrica', establecimientos: 8 },
     { nombre: 'Cirugía Plástica', establecimientos: 8 },
     { nombre: 'Cirugía Tórax y Cardiovascular', establecimientos: 17 },
     { nombre: 'Dermatología', establecimientos: 28 },
-    { nombre: 'Dermatologia Estética', establecimientos: 6 },
+    { nombre: 'Dermatología Estética', establecimientos: 6 },
     { nombre: 'Dermatología Láser', establecimientos: 1 },
     { nombre: 'Endocrinología', establecimientos: 11 },
     { nombre: 'Flebología', establecimientos: 1 },
@@ -26,7 +26,7 @@ const Especialidades = () => {
     { nombre: 'Mastología', establecimientos: 3 },
     { nombre: 'Medicina Estética', establecimientos: 1 },
     { nombre: 'Medicina familiar y comunitaria', establecimientos: 1 },
-    { nombre: 'Medicina fisica y rehabilitación', establecimientos: 20 },
+    { nombre: 'Medicina física y rehabilitación', establecimientos: 20 },
     { nombre: 'Medicina General', establecimientos: 31 },
     { nombre: 'Medicina Interna', establecimientos: 16 },
     { nombre: 'Nefrología', establecimientos: 1 },
@@ -49,16 +49,23 @@ const Especialidades = () => {
         <div
           className="especialidades-header"
           onClick={() => setIsOpen(!isOpen)}
-          style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="especialidades-header-content">
             <h2 className="especialidades-title">Nuestras Especialidades</h2>
             {isOpen ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
           </div>
-          <p className="especialidades-subtitle">
-            Contamos con una amplia gama de especialidades médicas para brindarte la mejor atención
-          </p>
         </div>
+
+        {isOpen && (
+          <div className="scroll-indicator">
+            <div className="swipe-finger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 12h20M18 8l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+            </div>
+            <span>Desliza para ver más</span>
+          </div>
+        )}
 
         {isOpen && (
           <div className="especialidades-grid">
@@ -81,5 +88,3 @@ const Especialidades = () => {
 };
 
 export default Especialidades;
-
-

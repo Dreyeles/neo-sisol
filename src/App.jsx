@@ -85,7 +85,7 @@ function App() {
         onRegisterClick={handleOpenRegister}
         onServiciosClick={handleServiciosClick}
       />
-      <Hero onAgendarCitaClick={handleOpenLogin} />
+      <Hero onAgendarCitaClick={handleOpenLogin} onRegisterClick={handleOpenRegister} />
       <Especialidades />
       <Servicios
         isOpen={isServiciosOpen}

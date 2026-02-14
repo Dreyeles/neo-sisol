@@ -1,112 +1,217 @@
 .especialidades {
-  padding: 80px 20px;
+  padding: 100px 20px;
   background: white;
+  display: flex;
+  justify-content: center;
 }
 
 .especialidades-container {
   max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .especialidades-header {
   text-align: center;
-  margin-bottom: 50px;
+  margin-bottom: 60px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.especialidades-header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #1a202c;
+  margin-bottom: 16px;
+  transition: transform 0.3s ease;
+}
+
+.especialidades-header:hover .especialidades-header-content {
+  transform: translateY(-2px);
 }
 
 .especialidades-title {
   font-size: 36px;
   font-weight: 700;
   color: #1a202c;
-  margin-bottom: 16px;
+  margin: 0;
 }
 
 .especialidades-subtitle {
-  font-size: 18px;
+  font-size: 19px;
   color: #718096;
   max-width: 600px;
-  margin: 0 auto;
   line-height: 1.6;
+  margin: 0;
 }
 
 .especialidades-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 24px;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .especialidad-card {
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 24px;
-  transition: all 0.3s ease;
-  cursor: pointer;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 32px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .especialidad-card:hover {
+  background: white;
   border-color: #00A39C;
-  box-shadow: 0 4px 12px rgba(0, 163, 156, 0.15);
-  transform: translateY(-4px);
+  box-shadow: 0 10px 40px rgba(0, 163, 156, 0.12);
+  transform: translateY(-5px);
 }
 
 .especialidad-nombre {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   color: #1a202c;
-  margin: 0 0 16px 0;
-  line-height: 1.4;
+  margin: 0;
+  line-height: 1.3;
 }
 
 .especialidad-info {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
 }
 
 .especialidad-numero {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
   color: #00A39C;
+  background: rgba(0, 163, 156, 0.05);
+  padding: 4px 12px;
+  border-radius: 12px;
 }
 
 .especialidad-label {
   font-size: 14px;
   color: #718096;
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.scroll-indicator {
+  display: none;
 }
 
 /* Responsive */
+@media (max-width: 968px) {
+  .especialidades-title {
+    font-size: 34px;
+  }
+}
+
 @media (max-width: 768px) {
   .especialidades {
-    padding: 60px 20px;
+    padding: 60px 0;
+  }
+
+  .especialidades-container {
+    padding: 0 20px;
+  }
+
+  .especialidades-subtitle {
+    font-size: 17px;
   }
 
   .especialidades-title {
     font-size: 28px;
-  }
-
-  .especialidades-subtitle {
-    font-size: 16px;
+    text-align: center;
   }
 
   .especialidades-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
     gap: 16px;
+    padding: 10px 20px 30px 20px;
+    -webkit-overflow-scrolling: touch;
+    margin: 0;
+    width: 100%;
+    grid-template-columns: none;
+    box-sizing: border-box;
+  }
+
+  /* Hide scrollbar */
+  .especialidades-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .especialidades-grid {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
   .especialidad-card {
-    padding: 20px;
+    min-width: 260px;
+    width: 260px;
+    padding: 24px;
+    scroll-snap-align: center;
+    flex-shrink: 0;
+    align-items: center;
+    text-align: center;
+    background: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    margin: 0;
+  }
+
+  .especialidad-info {
+    justify-content: center;
+  }
+
+  .scroll-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: -30px;
+    margin-bottom: 20px;
+    color: #00A39C;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.8;
+  }
+
+  .swipe-finger {
+    width: 24px;
+    height: 24px;
+    animation: swipeAnim 2s ease-in-out infinite;
+  }
+
+  @keyframes swipeAnim {
+
+    0%,
+    100% {
+      transform: translateX(-10px);
+    }
+
+    50% {
+      transform: translateX(10px);
+    }
   }
 }
-
-@media (max-width: 480px) {
-  .especialidades-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .especialidades-title {
-    font-size: 24px;
-  }
-}
-
-

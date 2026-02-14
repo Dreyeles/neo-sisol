@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_BASE_URL from '../config';
 import './Login.css';
 
 const Login = ({ isOpen = false, onClose = () => { }, onSwitchToRegister, onLoginSuccess }) => {

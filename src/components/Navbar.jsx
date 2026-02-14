@@ -47,6 +47,10 @@ const Navbar = ({ onLoginClick, onRegisterClick, onServiciosClick }) => {
 
         {/* Menu Desktop */}
         <ul className={`navbar-menu ${isMenuOpen ? 'active' : ''}`}>
+          <li className="navbar-mobile-header">
+            <img src="/logo.svg" alt="Neo Sisol" className="mobile-logo" />
+          </li>
+
           <li className="navbar-item">
             <a href="#inicio" className="navbar-link" onClick={handleInicioClick}>Inicio</a>
           </li>
@@ -58,6 +62,14 @@ const Navbar = ({ onLoginClick, onRegisterClick, onServiciosClick }) => {
           </li>
           <li className="navbar-item">
             <a href="#contacto" className="navbar-link" onClick={() => setIsMenuOpen(false)}>Contacto</a>
+          </li>
+
+          <li className="navbar-mobile-footer">
+            <div className="mobile-contact-info">
+              <p><strong>Dirección:</strong> Lima, Perú</p>
+              <p><strong>Teléfono:</strong> +51 919 487 083</p>
+              <p><strong>Email:</strong> salud.ocupacional@sisol.gob.pe</p>
+            </div>
           </li>
         </ul>
 

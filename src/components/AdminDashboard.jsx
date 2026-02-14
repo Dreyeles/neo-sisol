@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_BASE_URL from '../config';
 import './Dashboard.css';
 import './AdminDashboard.css';
 import LogoutIcon from './LogoutIcon';

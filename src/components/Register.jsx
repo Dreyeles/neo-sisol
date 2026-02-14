@@ -74,11 +74,6 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
       [name]: value
     }));
 
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-
     // Resetear distrito si cambia provincia y no es Lima Metropolitana
     if (name === 'provincia') {
       if (value !== 'Lima Metropolitana') {
@@ -182,7 +177,6 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
 
       // Limpiar formulario
       setFormData({
-        nombres: '',
         nombres: '',
         apellidos: '',
         dni: '',

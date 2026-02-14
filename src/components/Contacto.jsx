@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapPin, Phone, Mail, Send } from 'lucide-react';
 import './Contacto.css';
+import './Contacto_mobile_fix.css';
 
 const Contacto = () => {
     const handleSubmit = (e) => {

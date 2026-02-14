@@ -15,46 +15,74 @@ router.post('/check-availability', async (req, res) => {
             });
         }
 
-        // Definir rango de horas según el turno
-        let horaInicio, horaFin;
-        if (turno === 'manana') {
-            horaInicio = '07:00:00';
-            horaFin = '12:00:00';
-        } else if (turno === 'tarde') {
-            horaInicio = '14:00:00';
-            horaFin = '19:00:00';
-        } else {
-            return res.status(400).json({
-                status: 'ERROR',
-                message: 'Turno inválido'
-            });
-        }
-
-        // Contar citas existentes para ese médico en ese rango de fecha y hora
-        // Nota: Asumimos una capacidad máxima por turno, por ejemplo 10 citas.
-        // En un sistema real, esto podría estar configurado por médico.
+        // Capacidad máxima por turno
         const CAPACIDAD_POR_TURNO = 10;
 
-        const [result] = await db.query(
-            `SELECT COUNT(*) as total 
-             FROM cita 
-             WHERE id_medico = ? 
-             AND fecha_cita = ? 
-             AND hora_cita >= ? 
-             AND hora_cita < ?
-             AND estado NOT IN ('cancelada', 'no_asistio')`,
-            [id_medico, fecha, horaInicio, horaFin]
-        );
+        // Función auxiliar para contar citas en un turno
+        const contarCitas = async (medicoId, fechaCita, turnoCita) => {
+            let inicio, fin;
+            if (turnoCita === 'manana') {
+                inicio = '07:00:00';
+                fin = '12:00:00';
+            } else if (turnoCita === 'tarde') {
+                inicio = '14:00:00';
+                fin = '19:00:00';
+            } else {
+                return null;
+            }
 
-        const citasAgendadas = result[0].total;
-        const disponible = citasAgendadas < CAPACIDAD_POR_TURNO;
+            const [result] = await db.query(
+                `SELECT COUNT(*) as total 
+                 FROM cita 
+                 WHERE id_medico = ? 
+                 AND fecha_cita = ? 
+                 AND hora_cita >= ? 
+                 AND hora_cita < ?
+                 AND estado NOT IN ('cancelada', 'no_asistio')`,
+                [medicoId, fechaCita, inicio, fin]
+            );
+            return result[0].total;
+        };
+
+        // 1. Contar citas del turno solicitado
+        const citasTurnoSolicitado = await contarCitas(id_medico, fecha, turno);
+        if (citasTurnoSolicitado === null) {
+            return res.status(400).json({ status: 'ERROR', message: 'Turno inválido' });
+        }
+
+        const cuposRestantes = Math.max(0, CAPACIDAD_POR_TURNO - citasTurnoSolicitado);
+        const disponible = cuposRestantes > 0;
+
+        // 2. Si no hay disponibilidad, buscar alternativa en el otro turno
+        let sugerencia = null;
+        if (!disponible) {
+            const otroTurno = turno === 'manana' ? 'tarde' : 'manana';
+            const citasOtroTurno = await contarCitas(id_medico, fecha, otroTurno);
+            if (citasOtroTurno < CAPACIDAD_POR_TURNO) {
+                sugerencia = {
+                    turno: otroTurno,
+                    mensaje: `El turno ${turno} está lleno, pero aún hay cupos disponibles por la ${otroTurno}.`,
+                    cupos: CAPACIDAD_POR_TURNO - citasOtroTurno
+                };
+            } else {
+                sugerencia = {
+                    mensaje: 'Lo sentimos, ambos turnos para este día están completos.'
+                };
+            }
+        }
 
         res.json({
             status: 'OK',
             available: disponible,
-            citasAgendadas,
+            citasAgendadas: citasTurnoSolicitado,
+            cuposRestantes,
             capacidad: CAPACIDAD_POR_TURNO,
-            message: disponible ? 'Horario disponible' : 'Horario no disponible'
+            sugerencia,
+            message: disponible
+                ? `Horario disponible (${cuposRestantes} cupos restantes)`
+                : (sugerencia?.turno
+                    ? sugerencia.mensaje
+                    : 'Horario no disponible para este día')
         });
 
     } catch (error) {

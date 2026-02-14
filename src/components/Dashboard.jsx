@@ -51,6 +51,11 @@ const Dashboard = ({ user, onLogout }) => {
   const [cvv, setCvv] = useState('');
   const [nombreTitular, setNombreTitular] = useState('');
 
+  // Temporizador de pago (10 minutos = 600 segundos)
+  const PAYMENT_TIMEOUT_SECONDS = 600;
+  const [paymentTimeLeft, setPaymentTimeLeft] = useState(PAYMENT_TIMEOUT_SECONDS);
+  const [timerActive, setTimerActive] = useState(false);
+
   // Estados para pago de Exámenes
   const [paymentType, setPaymentType] = useState('cita'); // 'cita' | 'examen'
   const [selectedExamsToPay, setSelectedExamsToPay] = useState([]);
@@ -83,6 +88,21 @@ const Dashboard = ({ user, onLogout }) => {
 
     fetchEspecialidades();
   }, []);
+
+  // Control del temporizador de pago
+  useEffect(() => {
+    let timer;
+    if (timerActive && paymentTimeLeft > 0) {
+      timer = setInterval(() => {
+        setPaymentTimeLeft(prev => prev - 1);
+      }, 1000);
+    } else if (paymentTimeLeft === 0) {
+      setTimerActive(false);
+      setShowPaymentModal(false);
+      alert('La sesión de pago ha expirado. Por favor, intente nuevamente.');
+    }
+    return () => clearInterval(timer);
+  }, [timerActive, paymentTimeLeft]);
 
   // Cargar citas reales del paciente
   const fetchCitas = async () => {
@@ -180,7 +200,9 @@ const Dashboard = ({ user, onLogout }) => {
         if (data.status === 'OK') {
           setAvailability({
             available: data.available,
-            message: data.message
+            message: data.message,
+            cuposRestantes: data.cuposRestantes,
+            sugerencia: data.sugerencia
           });
         }
       } catch (error) {
@@ -201,8 +223,10 @@ const Dashboard = ({ user, onLogout }) => {
   const handleAgendarCita = (e) => {
     e.preventDefault();
     if (availability && availability.available) {
-      // Configurar modal para CITA
+      // Configurar modal para CITA e iniciar temporizador
       setPaymentType('cita');
+      setPaymentTimeLeft(PAYMENT_TIMEOUT_SECONDS);
+      setTimerActive(true);
       setShowPaymentModal(true);
     }
   };
@@ -348,6 +372,12 @@ const Dashboard = ({ user, onLogout }) => {
       return;
     }
 
+    if (paymentTimeLeft <= 0) {
+      alert('El tiempo ha expirado. Por favor, inicie el proceso de nuevo.');
+      setShowPaymentModal(false);
+      return;
+    }
+
     // Validar que si es billetera digital, se haya seleccionado yape o plin
     if (metodoPago === 'billetera_digital' && !billeteraEspecifica) {
       alert('Por favor seleccione Yape o Plin');
@@ -444,6 +474,14 @@ const Dashboard = ({ user, onLogout }) => {
 
   return (
     <div className="dashboard">
+      {/* Header para móviles */}
+      <header className="mobile-dashboard-header">
+        <img src="/logo.svg" alt="Neo SISOL" className="mobile-logo" />
+        <button className="mobile-logout-btn" onClick={onLogout}>
+          <LogoutIcon size={20} />
+        </button>
+      </header>
+
       <div className="dashboard-sidebar">
         <div className="sidebar-header">
           <img src="/logo.svg" alt="Neo SISOL" className="sidebar-logo" />
@@ -549,7 +587,7 @@ const Dashboard = ({ user, onLogout }) => {
                         </p>
                       </div>
                       <div className="cita-actions">
-                        <span className={`historial - status ${cita.estado} `}>{cita.estado}</span>
+                        <span className={`historial-status ${cita.estado}`}>{cita.estado}</span>
                       </div>
                     </div>
                   ))
@@ -653,8 +691,20 @@ const Dashboard = ({ user, onLogout }) => {
                 {/* Mensaje de disponibilidad */}
                 {checkingAvailability && <p className="status-checking">Verificando disponibilidad...</p>}
                 {!checkingAvailability && availability && (
-                  <div className={`availability - message ${availability.available ? 'success' : 'error'} `}>
+                  <div className={`availability-message ${availability.available ? 'success' : 'error'}`}>
                     {availability.message}
+                    {availability.sugerencia && !availability.available && (
+                      <div className="availability-suggestion">
+                        <p>{availability.sugerencia.mensaje}</p>
+                        <button
+                          type="button"
+                          className="btn-suggestion"
+                          onClick={() => setCitaTurno(availability.sugerencia.turno)}
+                        >
+                          Cambiar a turno {availability.sugerencia.turno}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -684,7 +734,16 @@ const Dashboard = ({ user, onLogout }) => {
                   <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
                     <div className="payment-modal-header">
                       <h3>💳 Pasarela de Pago</h3>
-                      <button className="close-modal" onClick={() => setShowPaymentModal(false)}>✕</button>
+                      <div className="payment-timer">
+                        <span className="timer-label">Tiempo restante:</span>
+                        <span className={`timer-clock ${paymentTimeLeft < 60 ? 'warning' : ''}`}>
+                          {Math.floor(paymentTimeLeft / 60)}:{(paymentTimeLeft % 60).toString().padStart(2, '0')}
+                        </span>
+                      </div>
+                      <button className="close-modal" onClick={() => {
+                        setShowPaymentModal(false);
+                        setTimerActive(false);
+                      }}>✕</button>
                     </div>
 
                     <div className="payment-modal-body">
@@ -735,7 +794,7 @@ const Dashboard = ({ user, onLogout }) => {
                       <div className="payment-methods">
                         <h4>Seleccione método de pago</h4>
                         <div className="payment-options">
-                          <label className={`payment - option ${metodoPago === 'tarjeta_debito' ? 'selected' : ''} `}>
+                          <label className={`payment-option ${metodoPago === 'tarjeta_debito' ? 'selected' : ''}`}>
                             <input
                               type="radio"
                               name="metodoPago"
@@ -745,7 +804,7 @@ const Dashboard = ({ user, onLogout }) => {
                             />
                             <span>💳 Tarjeta de Débito</span>
                           </label>
-                          <label className={`payment - option ${metodoPago === 'tarjeta_credito' ? 'selected' : ''} `}>
+                          <label className={`payment-option ${metodoPago === 'tarjeta_credito' ? 'selected' : ''}`}>
                             <input
                               type="radio"
                               name="metodoPago"
@@ -755,7 +814,7 @@ const Dashboard = ({ user, onLogout }) => {
                             />
                             <span>💳 Tarjeta de Crédito</span>
                           </label>
-                          <label className={`payment - option ${metodoPago === 'transferencia' ? 'selected' : ''} `}>
+                          <label className={`payment-option ${metodoPago === 'transferencia' ? 'selected' : ''}`}>
                             <input
                               type="radio"
                               name="metodoPago"
@@ -765,7 +824,7 @@ const Dashboard = ({ user, onLogout }) => {
                             />
                             <span>🏦 Transferencia Bancaria</span>
                           </label>
-                          <label className={`payment - option ${metodoPago === 'billetera_digital' ? 'selected' : ''} `}>
+                          <label className={`payment-option ${metodoPago === 'billetera_digital' ? 'selected' : ''}`}>
                             <input
                               type="radio"
                               name="metodoPago"
@@ -786,7 +845,7 @@ const Dashboard = ({ user, onLogout }) => {
                         <div className="payment-fields">
                           <h4 style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600' }}>Seleccione su billetera:</h4>
                           <div className="payment-options" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                            <label className={`payment - option ${billeteraEspecifica === 'yape' ? 'selected' : ''} `}>
+                            <label className={`payment-option ${billeteraEspecifica === 'yape' ? 'selected' : ''}`}>
                               <input
                                 type="radio"
                                 name="billeteraEspecifica"
@@ -797,7 +856,7 @@ const Dashboard = ({ user, onLogout }) => {
                               <img src="/yape-logo.png" alt="Yape" style={{ width: '24px', height: '24px', objectFit: 'contain', marginRight: '8px' }} />
                               <span>Yape</span>
                             </label>
-                            <label className={`payment - option ${billeteraEspecifica === 'plin' ? 'selected' : ''} `}>
+                            <label className={`payment-option ${billeteraEspecifica === 'plin' ? 'selected' : ''}`}>
                               <input
                                 type="radio"
                                 name="billeteraEspecifica"
@@ -933,7 +992,10 @@ const Dashboard = ({ user, onLogout }) => {
                     </div>
 
                     <div className="payment-modal-footer">
-                      <button className="btn-secondary" onClick={() => setShowPaymentModal(false)}>
+                      <button className="btn-secondary" onClick={() => {
+                        setShowPaymentModal(false);
+                        setTimerActive(false);
+                      }}>
                         Cancelar
                       </button>
                       <button
@@ -955,12 +1017,6 @@ const Dashboard = ({ user, onLogout }) => {
               <h2>Mi Perfil</h2>
               <div className="perfil-card">
                 <div className="perfil-header">
-                  <div className="avatar">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                      <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                  </div>
                   <h3>{user?.nombres || user?.nombre || 'Paciente'}</h3>
                 </div>
                 <div className="perfil-info-grid">
@@ -980,9 +1036,6 @@ const Dashboard = ({ user, onLogout }) => {
                     <label>Fecha de Nacimiento</label>
                     <span>01/01/1990</span>
                   </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button className="btn-primary">Editar Perfil</button>
                 </div>
               </div>
             </div>
@@ -1032,7 +1085,7 @@ const Dashboard = ({ user, onLogout }) => {
                       </p>
                     </div>
                     <div className="historial-actions">
-                      <span className={`historial - status ${cita.estado} `}>{cita.estado}</span>
+                      <span className={`historial-status ${cita.estado}`}>{cita.estado}</span>
                       {cita.estado === 'completada' && (
                         <div style={{ display: 'flex', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
                           <button
@@ -1158,6 +1211,63 @@ const Dashboard = ({ user, onLogout }) => {
           )}
         </main>
       </div>
+
+      {/* Menú inferior para móviles */}
+      <nav className="mobile-bottom-nav">
+        <button
+          className={`mobile-nav-item ${activeSection === 'citas' ? 'active' : ''}`}
+          onClick={() => setActiveSection('citas')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span>Citas</span>
+        </button>
+        <button
+          className={`mobile-nav-item ${activeSection === 'agendar' ? 'active' : ''}`}
+          onClick={() => setActiveSection('agendar')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <span>Agendar</span>
+        </button>
+        <button
+          className={`mobile-nav-item ${activeSection === 'historial' ? 'active' : ''}`}
+          onClick={() => setActiveSection('historial')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          <span>Historial</span>
+        </button>
+        <button
+          className={`mobile-nav-item ${activeSection === 'resultados' ? 'active' : ''}`}
+          onClick={() => setActiveSection('resultados')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+          <span>Resultados</span>
+        </button>
+        <button
+          className={`mobile-nav-item ${activeSection === 'perfil' ? 'active' : ''}`}
+          onClick={() => setActiveSection('perfil')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span>Perfil</span>
+        </button>
+      </nav>
     </div>
   );
 };

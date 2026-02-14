@@ -1,8 +1,9 @@
 .navbar {
   background: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 0;
+  position: relative;
+  /* Changed from sticky to relative */
+  /* top: 0; Removed as it's not needed for relative */
   z-index: 1000;
   width: 100%;
 }
@@ -128,8 +129,14 @@
 .navbar-toggle {
   display: none;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
   cursor: pointer;
-  gap: 4px;
+  gap: 5px;
+  padding: 10px;
+  margin: 0;
+  height: 40px;
+  width: 40px;
 }
 
 .bar {
@@ -152,6 +159,12 @@
   transform: rotate(-45deg) translate(7px, -6px);
 }
 
+/* Base styles for mobile header/footer (hidden on desktop) */
+.navbar-mobile-header,
+.navbar-mobile-footer {
+  display: none;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .navbar-logo .logo-image {
@@ -161,62 +174,192 @@
 
   .navbar-toggle {
     display: flex;
+    z-index: 1002;
   }
 
+  /* Side Drawer */
   .navbar-menu {
     position: fixed;
-    left: -100%;
     top: 70px;
+    right: -100%;
+    /* Start off-screen */
+    left: auto;
+    /* Reset left */
+    height: calc(100vh - 70px);
+    width: 75%;
+    /* Partial width */
+    max-width: 300px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     flex-direction: column;
-    background: white;
-    width: 100%;
-    text-align: center;
-    transition: left 0.3s ease;
-    box-shadow: 0 10px 27px rgba(0, 0, 0, 0.05);
-    padding: 20px 0;
+    justify-content: flex-start;
+    align-items: flex-start;
+    /* Align text to start */
+    text-align: left;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+    padding: 30px 20px;
     gap: 0;
+    z-index: 1001;
+  }
+
+  /* Backdrop effect */
+  .navbar-menu::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: -100vw;
+    /* Hidden by default */
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    /* Semi-transparent black */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: -1;
   }
 
   .navbar-menu.active {
-    left: 0;
+    right: 0;
+  }
+
+  /* Show backdrop when active */
+  .navbar-menu.active::before {
+    left: -100vw;
+    /* Position relative to menu */
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .navbar-menu {
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.05), 0 0 0 100vmax rgba(0, 0, 0, 0.5);
+  }
+
+  .navbar-menu:not(.active) {
+    box-shadow: none;
   }
 
   .navbar-item {
     width: 100%;
-    padding: 15px 0;
+    padding: 0;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s ease;
+  }
+
+  /* Staggered animation */
+  .navbar-menu.active .navbar-item {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .navbar-menu.active .navbar-item:nth-child(1) {
+    transition-delay: 0.1s;
+  }
+
+  .navbar-menu.active .navbar-item:nth-child(2) {
+    transition-delay: 0.15s;
+  }
+
+  .navbar-menu.active .navbar-item:nth-child(3) {
+    transition-delay: 0.2s;
+  }
+
+  .navbar-menu.active .navbar-item:nth-child(4) {
+    transition-delay: 0.25s;
+  }
+
+  .navbar-menu.active .navbar-item:nth-child(5) {
+    transition-delay: 0.3s;
+  }
+
+  .navbar-menu.active .navbar-item:nth-child(6) {
+    transition-delay: 0.35s;
   }
 
   .navbar-link {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2d3748;
+    padding: 15px 0;
     display: block;
     width: 100%;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   }
 
-  .navbar-actions {
+  .navbar-link:hover {
+    color: #00A39C;
+    padding-left: 10px;
+    background: rgba(0, 163, 156, 0.05);
+  }
+
+  .navbar-link::after {
     display: none;
   }
 
-  .navbar-menu.active ~ .navbar-actions {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    padding: 20px;
-    gap: 10px;
+  /* Hide Actions as requested */
+  .navbar-actions {
+    display: none !important;
   }
 
-  .navbar-menu.active ~ .navbar-actions .navbar-button-secondary,
-  .navbar-menu.active ~ .navbar-actions .navbar-button-primary {
+  .navbar-menu.active~.navbar-actions {
+    display: none !important;
+  }
+
+  /* Mobile Header & Footer Styles */
+  .navbar-mobile-header {
+    display: flex;
     width: 100%;
+    padding: 0 0 20px 0;
+    margin-bottom: 10px;
+    border-bottom: 2px solid rgba(0, 163, 156, 0.1);
+  }
+
+  .mobile-logo {
+    height: 40px;
+    width: auto;
+  }
+
+  .navbar-mobile-footer {
+    display: block;
+    margin-top: auto;
+    /* Push to bottom */
+    width: 100%;
+    padding-top: 20px;
+    border-top: 2px solid rgba(0, 163, 156, 0.1);
+  }
+
+  .mobile-contact-info p {
+    font-size: 13px;
+    color: #718096;
+    margin-bottom: 10px;
+    line-height: 1.4;
+  }
+
+  .mobile-contact-info strong {
+    color: #2d3748;
+    display: block;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
   }
 }
 
 @media (max-width: 480px) {
   .navbar-container {
-    padding: 0 15px;
+    padding: 0 25px;
   }
 
   .navbar-logo .logo-image {
     height: 30px;
     max-width: 120px;
   }
-}
 
+  .navbar-menu {
+    width: 85%;
+  }
+}
