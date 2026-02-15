@@ -36,6 +36,7 @@ const Dashboard = ({ user, onLogout }) => {
   const [medicos, setMedicos] = useState([]);
   const [loadingMedicos, setLoadingMedicos] = useState(false);
   const [availability, setAvailability] = useState(null); // { available: true/false, message: '' }
+  const [dayAvailability, setDayAvailability] = useState(null); // Para ver disponibilidad de ambos turnos
   const [checkingAvailability, setCheckingAvailability] = useState(false);
 
   // Estado para modal de pago
@@ -53,6 +54,7 @@ const Dashboard = ({ user, onLogout }) => {
 
   // Temporizador de pago (10 minutos = 600 segundos)
   const PAYMENT_TIMEOUT_SECONDS = 600;
+  const PAYMENT_EXPIRY_KEY = 'sisol_payment_expiry';
   const [paymentTimeLeft, setPaymentTimeLeft] = useState(PAYMENT_TIMEOUT_SECONDS);
   const [timerActive, setTimerActive] = useState(false);
 
@@ -68,6 +70,34 @@ const Dashboard = ({ user, onLogout }) => {
   // Filtros Historial
   const [filterHistorialDate, setFilterHistorialDate] = useState('');
   const [filterHistorialSpecialty, setFilterHistorialSpecialty] = useState('');
+
+  // Estado para completar perfil
+  const [showCompleteProfileModal, setShowCompleteProfileModal] = useState(false);
+  const [profileData, setProfileData] = useState({
+    telefono: user?.telefono || '',
+    direccion: user?.direccion || '',
+    distrito: user?.distrito || '',
+    provincia: user?.provincia || '',
+    departamento: user?.departamento || 'Lima',
+    fecha_nacimiento: user?.fecha_nacimiento || '',
+    genero: user?.genero || '',
+    contacto_emergencia_nombre: user?.contacto_emergencia_nombre || '',
+    contacto_emergencia_telefono: user?.contacto_emergencia_telefono || '',
+    contacto_emergencia_relacion: user?.contacto_emergencia_relacion || ''
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const isProfileComplete = () => {
+    return !!(
+      user?.telefono &&
+      user?.direccion &&
+      user?.provincia &&
+      user?.fecha_nacimiento &&
+      user?.genero &&
+      user?.contacto_emergencia_nombre &&
+      user?.contacto_emergencia_telefono
+    );
+  };
 
   // Cargar especialidades desde la API
   useEffect(() => {
@@ -89,22 +119,55 @@ const Dashboard = ({ user, onLogout }) => {
     fetchEspecialidades();
   }, []);
 
+  // Efecto para recuperar el temporizador al cargar o abrir el modal
+  useEffect(() => {
+    const expiry = localStorage.getItem(PAYMENT_EXPIRY_KEY);
+    if (expiry) {
+      const timeLeft = Math.max(0, Math.floor((parseInt(expiry) - Date.now()) / 1000));
+      if (timeLeft > 0) {
+        setPaymentTimeLeft(timeLeft);
+        if (showPaymentModal) setTimerActive(true);
+      } else {
+        localStorage.removeItem(PAYMENT_EXPIRY_KEY);
+        setPaymentTimeLeft(PAYMENT_TIMEOUT_SECONDS);
+      }
+    }
+  }, [showPaymentModal]);
+
   // Control del temporizador de pago
   useEffect(() => {
     let timer;
-    if (timerActive && paymentTimeLeft > 0) {
+    if (timerActive) {
       timer = setInterval(() => {
-        setPaymentTimeLeft(prev => prev - 1);
+        const expiry = localStorage.getItem(PAYMENT_EXPIRY_KEY);
+        if (expiry) {
+          const timeLeft = Math.max(0, Math.floor((parseInt(expiry) - Date.now()) / 1000));
+          setPaymentTimeLeft(timeLeft);
+
+          if (timeLeft <= 0) {
+            setTimerActive(false);
+            setShowPaymentModal(false);
+            localStorage.removeItem(PAYMENT_EXPIRY_KEY);
+            alert('La sesión de pago ha expirado. Por favor, intente nuevamente.');
+          }
+        } else {
+          // Si no hay expiry en localStorage pero el timer está activo, algo está mal
+          setTimerActive(false);
+        }
       }, 1000);
-    } else if (paymentTimeLeft === 0) {
-      setTimerActive(false);
-      setShowPaymentModal(false);
-      alert('La sesión de pago ha expirado. Por favor, intente nuevamente.');
     }
     return () => clearInterval(timer);
-  }, [timerActive, paymentTimeLeft]);
+  }, [timerActive]);
 
   // Cargar citas reales del paciente
+  // Efecto para verificar perfil al entrar a agendar
+  useEffect(() => {
+    if (activeSection === 'agendar' && !isProfileComplete()) {
+      console.log('Perfil incompleto detectado al entrar a Agendar. Mostrando modal.');
+      setShowCompleteProfileModal(true);
+    }
+  }, [activeSection, user]);
+
   const fetchCitas = async () => {
     // Si no hay ID de paciente, no intentamos cargar y quitamos el loading
     if (!user?.id_paciente) {
@@ -174,6 +237,32 @@ const Dashboard = ({ user, onLogout }) => {
     fetchMedicos();
   }, [citaEspecialidad]);
 
+  // Cargar disponibilidad de todo el día cuando cambia el médico o la fecha
+  useEffect(() => {
+    if (!citaMedico || !citaFecha) {
+      setDayAvailability(null);
+      return;
+    }
+
+    const fetchDayAvailability = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/citas/check-full-day-availability`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_medico: citaMedico, fecha: citaFecha })
+        });
+        const data = await response.json();
+        if (data.status === 'OK') {
+          setDayAvailability(data.availability);
+        }
+      } catch (error) {
+        console.error('Error al cargar disponibilidad del día:', error);
+      }
+    };
+
+    fetchDayAvailability();
+  }, [citaMedico, citaFecha]);
+
   // Verificar disponibilidad cuando cambian los datos requeridos
   useEffect(() => {
     if (!citaMedico || !citaFecha || !citaTurno) {
@@ -182,6 +271,20 @@ const Dashboard = ({ user, onLogout }) => {
     }
 
     const checkAvailability = async () => {
+      // Validar si es domingo de forma robusta
+      if (!citaFecha) return;
+      const [year, month, day] = citaFecha.split('-').map(Number);
+      const dateObj = new Date(year, month - 1, day);
+      if (dateObj.getDay() === 0) {
+        setAvailability({
+          available: false,
+          message: 'Los domingos no hay atención. Por favor elija un día de Lunes a Sábado.',
+          sugerencia: null
+        });
+        setCheckingAvailability(false);
+        return;
+      }
+
       setCheckingAvailability(true);
       try {
         const response = await fetch(`${API_BASE_URL}/api/citas/check-availability`, {
@@ -222,10 +325,33 @@ const Dashboard = ({ user, onLogout }) => {
 
   const handleAgendarCita = (e) => {
     e.preventDefault();
+
+    if (!isProfileComplete()) {
+      setShowCompleteProfileModal(true);
+      return;
+    }
+
+    // Doble verificación de domingo
+    const [year, month, day] = citaFecha.split('-').map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    if (dateObj.getDay() === 0) {
+      alert('Lo sentimos, los domingos no hay atención. Por favor seleccione otro día.');
+      return;
+    }
+
     if (availability && availability.available) {
       // Configurar modal para CITA e iniciar temporizador
       setPaymentType('cita');
-      setPaymentTimeLeft(PAYMENT_TIMEOUT_SECONDS);
+
+      // Persistencia del temporizador
+      let expiry = localStorage.getItem(PAYMENT_EXPIRY_KEY);
+      if (!expiry) {
+        expiry = (Date.now() + (PAYMENT_TIMEOUT_SECONDS * 1000)).toString();
+        localStorage.setItem(PAYMENT_EXPIRY_KEY, expiry);
+      }
+
+      const timeLeft = Math.max(0, Math.floor((parseInt(expiry) - Date.now()) / 1000));
+      setPaymentTimeLeft(timeLeft);
       setTimerActive(true);
       setShowPaymentModal(true);
     }
@@ -440,6 +566,7 @@ const Dashboard = ({ user, onLogout }) => {
         setActiveSection('citas');
         // Recargar citas
         fetchCitas();
+        localStorage.removeItem(PAYMENT_EXPIRY_KEY);
       } else {
         console.error('Error backend:', data);
         let errorMsg = 'Error al procesar el pago: ' + data.message;
@@ -501,7 +628,12 @@ const Dashboard = ({ user, onLogout }) => {
           </button>
           <button
             className={`nav-item ${activeSection === 'agendar' ? 'active' : ''}`}
-            onClick={() => setActiveSection('agendar')}
+            onClick={() => {
+              setActiveSection('agendar');
+              if (!isProfileComplete()) {
+                setShowCompleteProfileModal(true);
+              }
+            }}
           >
             <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -683,7 +815,7 @@ const Dashboard = ({ user, onLogout }) => {
                     required
                   >
                     <option value="">Seleccione un turno</option>
-                    <option value="manana">Mañana (7:00 AM - 12:00 PM)</option>
+                    <option value="manana">Mañana (7:00 AM - 1:00 PM)</option>
                     <option value="tarde">Tarde (2:00 PM - 7:00 PM)</option>
                   </select>
                 </div>
@@ -1009,6 +1141,182 @@ const Dashboard = ({ user, onLogout }) => {
                   </div>
                 </div>
               )}
+
+              {/* Modal de Completar Perfil */}
+              {showCompleteProfileModal && (
+                <div className="payment-modal-overlay">
+                  <div className="payment-modal" style={{ maxWidth: '600px' }}>
+                    <div className="payment-modal-header">
+                      <h3>📋 Completar Información</h3>
+                      <button className="close-modal" onClick={() => setShowCompleteProfileModal(false)}>✕</button>
+                    </div>
+                    <div className="payment-modal-body">
+                      <p style={{ marginBottom: '20px', color: '#666' }}>Para agendar tu primera cita, necesitamos algunos datos adicionales de salud y contacto.</p>
+
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Teléfono Celular</label>
+                          <input
+                            type="tel"
+                            placeholder="987654321"
+                            value={profileData.telefono}
+                            maxLength={9}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '');
+                              if (val.length <= 9) {
+                                setProfileData({ ...profileData, telefono: val });
+                              }
+                            }}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Género</label>
+                          <select
+                            value={profileData.genero}
+                            onChange={(e) => setProfileData({ ...profileData, genero: e.target.value })}
+                          >
+                            <option value="">Seleccione</option>
+                            <option value="masculino">Masculino</option>
+                            <option value="femenino">Femenino</option>
+                            <option value="otro">Otro</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Fecha de Nacimiento</label>
+                          <input
+                            type="date"
+                            value={profileData.fecha_nacimiento ? profileData.fecha_nacimiento.split('T')[0] : ''}
+                            onChange={(e) => setProfileData({ ...profileData, fecha_nacimiento: e.target.value })}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Dirección</label>
+                          <input
+                            type="text"
+                            placeholder="Av. Las Magnolias 123"
+                            value={profileData.direccion}
+                            onChange={(e) => setProfileData({ ...profileData, direccion: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Provincia</label>
+                          <select
+                            value={profileData.provincia}
+                            onChange={(e) => setProfileData({ ...profileData, provincia: e.target.value })}
+                          >
+                            <option value="">Seleccione</option>
+                            <option value="Lima Metropolitana">Lima Metropolitana</option>
+                            <option value="Callao">Callao</option>
+                            {/* Otros departamentos... */}
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label>Distrito</label>
+                          <input
+                            type="text"
+                            placeholder="Ej: Miraflores"
+                            value={profileData.distrito}
+                            onChange={(e) => setProfileData({ ...profileData, distrito: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-section-divider">
+                        <span>Contacto de Emergencia</span>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Nombre Completo</label>
+                        <input
+                          type="text"
+                          value={profileData.contacto_emergencia_nombre}
+                          onChange={(e) => setProfileData({ ...profileData, contacto_emergencia_nombre: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Teléfono</label>
+                          <input
+                            type="tel"
+                            maxLength={9}
+                            placeholder="999888777"
+                            value={profileData.contacto_emergencia_telefono}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '');
+                              if (value.length <= 9) {
+                                setProfileData({ ...profileData, contacto_emergencia_telefono: value });
+                              }
+                            }}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Relación</label>
+                          <input
+                            type="text"
+                            placeholder="Ej: Padre, Madre, Cónyuge"
+                            value={profileData.contacto_emergencia_relacion}
+                            onChange={(e) => setProfileData({ ...profileData, contacto_emergencia_relacion: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="payment-modal-footer">
+                      <button className="btn-secondary" onClick={() => setShowCompleteProfileModal(false)}>Cancelar</button>
+                      <button
+                        className="btn-primary"
+                        disabled={savingProfile}
+                        onClick={async () => {
+                          if (!profileData.telefono || !profileData.direccion || !profileData.genero || !profileData.fecha_nacimiento || !profileData.contacto_emergencia_nombre || !profileData.contacto_emergencia_telefono) {
+                            alert('Por favor complete todos los campos obligatorios.');
+                            return;
+                          }
+
+                          if (profileData.telefono.length !== 9) {
+                            alert('El número de celular debe tener exactamente 9 dígitos.');
+                            return;
+                          }
+
+                          if (profileData.contacto_emergencia_telefono.length !== 9) {
+                            alert('El número de contacto de emergencia debe tener exactamente 9 dígitos.');
+                            return;
+                          }
+                          setSavingProfile(true);
+                          try {
+                            const res = await fetch(`${API_BASE_URL}/api/pacientes/${user.id_paciente}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(profileData)
+                            });
+                            const data = await res.json();
+                            if (data.status === 'OK') {
+                              alert('Perfil actualizado con éxito. Ahora puedes agendar tu cita.');
+                              // Actualizar el objeto user en el padre/estado local
+                              Object.assign(user, profileData);
+                              setShowCompleteProfileModal(false);
+                            } else {
+                              alert('Error: ' + data.message);
+                            }
+                          } catch (err) {
+                            console.error(err);
+                            alert('Error al conectar con el servidor');
+                          } finally {
+                            setSavingProfile(false);
+                          }
+                        }}
+                      >
+                        {savingProfile ? 'Guardando...' : 'Guardar y Continuar'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1228,7 +1536,12 @@ const Dashboard = ({ user, onLogout }) => {
         </button>
         <button
           className={`mobile-nav-item ${activeSection === 'agendar' ? 'active' : ''}`}
-          onClick={() => setActiveSection('agendar')}
+          onClick={() => {
+            setActiveSection('agendar');
+            if (!isProfileComplete()) {
+              setShowCompleteProfileModal(true);
+            }
+          }}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>

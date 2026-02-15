@@ -27,8 +27,8 @@ router.post('/register', async (req, res) => {
             contacto_emergencia_relacion
         } = req.body;
 
-        // Validar campos obligatorios
-        if (!email || !password || !dni || !nombres || !apellidos || !fecha_nacimiento || !genero) {
+        // Validar campos obligatorios (Simplificado)
+        if (!email || !password || !dni || !nombres || !apellidos) {
             return res.status(400).json({
                 status: 'ERROR',
                 message: 'Faltan campos obligatorios'
@@ -83,7 +83,7 @@ router.post('/register', async (req, res) => {
           estado
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
-                    id_usuario, dni, nombres, apellidos, fecha_nacimiento, genero,
+                    id_usuario, dni, nombres, apellidos, fecha_nacimiento || null, genero || null,
                     telefono || null, celular || null, direccion || null,
                     distrito || null, provincia || null, departamento || null,
                     contacto_emergencia_nombre || null, contacto_emergencia_telefono || null, contacto_emergencia_relacion || null,

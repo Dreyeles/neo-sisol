@@ -8,41 +8,11 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
     apellidos: '',
     dni: '',
     email: '',
-    telefono: '',
-    direccion: '',
-    distrito: '',
-    provincia: '',
-    departamento: 'Lima',
-    contacto_emergencia_nombre: '',
-    contacto_emergencia_telefono: '',
-    contacto_emergencia_relacion: '',
-    password: '',
-    confirmPassword: '',
-    fecha_nacimiento: '',
-    genero: ''
+    password: ''
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // Datos para ubicación
-  const provinciasLimaReg = [
-    "Barranca", "Cajatambo", "Canta", "Cañete", "Huaral",
-    "Huarochirí", "Huaura (antes Chancay)", "Oyón", "Yauyos", "Lima Metropolitana"
-  ];
-
-  const distritosLimaReg = [
-    "Ancón", "Ate", "Barranco", "Breña", "Carabayllo", "Chaclacayo", "Chorrillos",
-    "Cieneguilla", "Comas", "El Agustino", "Independencia", "Jesús María",
-    "La Molina", "La Victoria", "Lima", "Lince", "Los Olivos", "Lurigancho", "Lurín",
-    "Magdalena del Mar", "Miraflores", "Pachacámac", "Pucusana", "Pueblo Libre",
-    "Puente Piedra", "Punta Hermosa", "Punta Negra", "Rímac", "San Bartolo",
-    "San Borja", "San Isidro", "San Juan de Lurigancho", "San Juan de Miraflores",
-    "San Luis", "San Martín de Porres", "San Miguel", "Santa Anita",
-    "Santa María del Mar", "Santa Rosa", "Santiago de Surco", "Surquillo",
-    "Villa El Salvador", "Villa María del Triunfo"
-  ];
 
   // Cerrar modal con ESC
   useEffect(() => {
@@ -73,13 +43,6 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
       ...prev,
       [name]: value
     }));
-
-    // Resetear distrito si cambia provincia y no es Lima Metropolitana
-    if (name === 'provincia') {
-      if (value !== 'Lima Metropolitana') {
-        setFormData(prev => ({ ...prev, distrito: '' }));
-      }
-    }
 
     // Limpiar error del campo cuando el usuario empiece a escribir
     if (errors[name]) {
@@ -113,30 +76,20 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
       newErrors.email = 'El correo electrónico no es válido';
     }
 
-    if (!formData.telefono) {
-      newErrors.telefono = 'El teléfono es requerido';
-    } else if (!/^\d{9}$/.test(formData.telefono.replace(/\s/g, ''))) {
-      newErrors.telefono = 'El teléfono debe tener exactamente 9 dígitos';
-    }
-
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
-    }
+    } else {
+      const password = formData.password;
+      const requirements = [];
+      if (password.length < 8) requirements.push('mínimo 8 caracteres');
+      if (!/[A-Z]/.test(password)) requirements.push('una mayúscula');
+      if (!/[a-z]/.test(password)) requirements.push('una minúscula');
+      if (!/\d/.test(password)) requirements.push('un número');
+      if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) requirements.push('un carácter especial');
 
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Confirma tu contraseña';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Las contraseñas no coinciden';
-    }
-
-    if (!formData.fecha_nacimiento) {
-      newErrors.fecha_nacimiento = 'La fecha de nacimiento es requerida';
-    }
-
-    if (!formData.genero) {
-      newErrors.genero = 'El género es requerido';
+      if (requirements.length > 0) {
+        newErrors.password = `La contraseña requiere: ${requirements.join(', ')}`;
+      }
     }
 
     setErrors(newErrors);
@@ -156,11 +109,7 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          // Asegurar que fecha_nacimiento se envíe en formato correcto si es necesario
-          // El input type="date" ya devuelve YYYY-MM-DD que es compatible con MySQL
-        })
+        body: JSON.stringify(formData)
       });
 
       const data = await response.json();
@@ -172,30 +121,16 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
       console.log('Registro exitoso:', data);
       alert('¡Registro exitoso! Ahora puedes iniciar sesión.');
 
-      // Cerrar modal después de registro exitoso
       onClose();
 
-      // Limpiar formulario
       setFormData({
         nombres: '',
         apellidos: '',
         dni: '',
         email: '',
-        telefono: '',
-        direccion: '',
-        distrito: '',
-        provincia: '',
-        departamento: '',
-        contacto_emergencia_nombre: '',
-        contacto_emergencia_telefono: '',
-        contacto_emergencia_relacion: '',
-        password: '',
-        confirmPassword: '',
-        fecha_nacimiento: '',
-        genero: ''
+        password: ''
       });
 
-      // Cambiar a login
       if (onSwitchToLogin) {
         setTimeout(() => onSwitchToLogin(), 100);
       }
@@ -218,7 +153,7 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
           </button>
           <div className="register-header">
             <h1>Crear Cuenta</h1>
-            <p>Completa tus datos para registrarte</p>
+            <p>Registro rápido para agendar tu cita</p>
           </div>
 
           <form onSubmit={handleSubmit} className="register-form">
@@ -286,161 +221,6 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="telefono">Teléfono</label>
-              <input
-                type="tel"
-                id="telefono"
-                name="telefono"
-                value={formData.telefono}
-                onChange={handleChange}
-                className={errors.telefono ? 'input-error' : ''}
-                placeholder="987654321"
-                disabled={isLoading}
-              />
-              {errors.telefono && <span className="error-message">{errors.telefono}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="direccion">Dirección</label>
-              <input
-                type="text"
-                id="direccion"
-                name="direccion"
-                value={formData.direccion}
-                onChange={handleChange}
-                placeholder="Av. Principal 123"
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="departamento">Departamento</label>
-                <input
-                  type="text"
-                  id="departamento"
-                  name="departamento"
-                  value={formData.departamento}
-                  readOnly // Por defecto Lima
-                  disabled={isLoading}
-                  style={{ backgroundColor: '#f3f4f6' }}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="provincia">Provincia</label>
-                <select
-                  id="provincia"
-                  name="provincia"
-                  value={formData.provincia}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                  style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
-                >
-                  <option value="">Seleccione</option>
-                  {provinciasLimaReg.map(p => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-              </div>
-              {formData.provincia === 'Lima Metropolitana' && (
-                <div className="form-group">
-                  <label htmlFor="distrito">Distrito</label>
-                  <select
-                    id="distrito"
-                    name="distrito"
-                    value={formData.distrito}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
-                  >
-                    <option value="">Seleccione Distrito</option>
-                    {distritosLimaReg.map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            <div className="form-section-divider">
-              <span>Contacto de Emergencia</span>
-            </div>
-            <div className="form-group">
-              <label htmlFor="contacto_emergencia_nombre">Nombre Contacto</label>
-              <input
-                type="text"
-                id="contacto_emergencia_nombre"
-                name="contacto_emergencia_nombre"
-                value={formData.contacto_emergencia_nombre}
-                onChange={handleChange}
-                placeholder="Nombre completo"
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="contacto_emergencia_telefono">Teléfono Contacto</label>
-                <input
-                  type="tel"
-                  id="contacto_emergencia_telefono"
-                  name="contacto_emergencia_telefono"
-                  value={formData.contacto_emergencia_telefono}
-                  onChange={handleChange}
-                  placeholder="Celular"
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="contacto_emergencia_relacion">Relación / Parentesco</label>
-                <input
-                  type="text"
-                  id="contacto_emergencia_relacion"
-                  name="contacto_emergencia_relacion"
-                  value={formData.contacto_emergencia_relacion}
-                  onChange={handleChange}
-                  placeholder="Ej: Madre, Padre, Hermano"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="fecha_nacimiento">Fecha de Nacimiento</label>
-                <input
-                  type="date"
-                  id="fecha_nacimiento"
-                  name="fecha_nacimiento"
-                  value={formData.fecha_nacimiento}
-                  onChange={handleChange}
-                  className={errors.fecha_nacimiento ? 'input-error' : ''}
-                  disabled={isLoading}
-                />
-                {errors.fecha_nacimiento && <span className="error-message">{errors.fecha_nacimiento}</span>}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="genero">Género</label>
-                <select
-                  id="genero"
-                  name="genero"
-                  value={formData.genero}
-                  onChange={handleChange}
-                  className={errors.genero ? 'input-error' : ''}
-                  disabled={isLoading}
-                >
-                  <option value="">Selecciona</option>
-                  <option value="masculino">Masculino</option>
-                  <option value="femenino">Femenino</option>
-                  <option value="otro">Otro</option>
-                  <option value="prefiero-no-decir">Prefiero no decir</option>
-                </select>
-                {errors.genero && <span className="error-message">{errors.genero}</span>}
-              </div>
-            </div>
-
-            <div className="form-group">
               <label htmlFor="password">Contraseña</label>
               <div className="password-input-wrapper">
                 <input
@@ -472,49 +252,26 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
                   )}
                 </button>
               </div>
+
+              {/* Lista visual de requisitos */}
+              <ul className="password-requirements">
+                {[
+                  { label: 'Mínimo 8 caracteres', met: formData.password.length >= 8 },
+                  { label: 'Una mayúscula', met: /[A-Z]/.test(formData.password) },
+                  { label: 'Una minúscula', met: /[a-z]/.test(formData.password) },
+                  { label: 'Un número', met: /\d/.test(formData.password) },
+                  { label: 'Un carácter especial (!@#$...)', met: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password) }
+                ].map((req, idx) => (
+                  <li key={idx} className={`requirement-item ${req.met ? 'met' : ''}`}>
+                    <span className="requirement-icon">
+                      {req.met ? '✓' : '•'}
+                    </span>
+                    {req.label}
+                  </li>
+                ))}
+              </ul>
+
               {errors.password && <span className="error-message">{errors.password}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="confirmPassword">Confirmar Contraseña</label>
-              <div className="password-input-wrapper">
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className={errors.confirmPassword ? 'input-error' : ''}
-                  placeholder="••••••••"
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  className="password-toggle"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                >
-                  {showConfirmPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                      <line x1="1" y1="1" x2="23" y2="23"></line>
-                    </svg>
-                  )}
-                </button>
-              </div>
-              {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
-            </div>
-
-            <div className="form-options">
-              <label className="terms-checkbox">
-                <input type="checkbox" required />
-                <span>Acepto los <a href="#">términos y condiciones</a> y la <a href="#">política de privacidad</a></span>
-              </label>
             </div>
 
             <button
@@ -522,7 +279,7 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
               className="register-button"
               disabled={isLoading}
             >
-              {isLoading ? 'Registrando...' : 'Registrarse'}
+              {isLoading ? 'Registrando...' : 'Siguiente: Iniciar Sesión'}
             </button>
           </form>
 
@@ -542,4 +299,3 @@ const Register = ({ isOpen, onClose, onSwitchToLogin }) => {
 };
 
 export default Register;
-

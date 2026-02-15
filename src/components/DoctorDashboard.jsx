@@ -73,9 +73,16 @@ const DoctorDashboard = ({ user, onLogout }) => {
         }
     }, [user, activeSection]);
 
-    // Filtrar citas para el día de hoy (o todas para demostración)
-    // En un sistema real usaríamos fecha actual, pero aquí mostramos todas las programadas
-    const agendaDelDia = citas.filter(c => c.estado === 'programada' || c.estado === 'confirmada');
+    // Filtrar citas para el día de hoy
+    const [showAusentes, setShowAusentes] = useState(false);
+
+    const agendaDelDia = citas.filter(c =>
+        showAusentes
+            ? c.estado === 'no_asistio'
+            : (c.estado === 'programada' || c.estado === 'confirmada' || c.estado === 'pagado')
+    );
+
+    console.log('DoctorDashboard: Citas filtradas (Ausentes: ' + showAusentes + '):', agendaDelDia);
 
     const [showConsultaModal, setShowConsultaModal] = useState(false);
     const [consultaActual, setConsultaActual] = useState(null);
@@ -675,6 +682,60 @@ const DoctorDashboard = ({ user, onLogout }) => {
             alert('Error de conexión al registrar atención');
         }
     };
+
+    const handleMarcarNoAsistio = async (id_cita) => {
+        if (!window.confirm('¿Está seguro de marcar esta cita como "No Asistió"? Esto liberará el cupo para otros pacientes.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/citas/${id_cita}/estado`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estado: 'no_asistio' })
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'OK') {
+                alert('Cita marcada como "No Asistió" correctamente.');
+                fetchCitas(); // Recargar la lista
+            } else {
+                alert('Error al actualizar estado: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error al actualizar estado:', error);
+            alert('Error de conexión');
+        }
+    };
+
+    const handleRecuperarCita = async (id_cita) => {
+        if (!window.confirm('¿Desea recuperar esta cita? Esto la volverá a activar en su agenda (SOBRE-CUPO).')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/citas/${id_cita}/estado`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estado: 'programada' })
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'OK') {
+                alert('Cita recuperada exitosamente.');
+                fetchCitas();
+                setShowAusentes(false); // Volver a la vista principal
+            } else {
+                alert('Error al recuperar cita: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error al recuperar cita:', error);
+            alert('Error de conexión');
+        }
+    };
+
     return (
         <div className="dashboard doctor-dashboard">
             <div className="dashboard-sidebar">
@@ -754,7 +815,15 @@ const DoctorDashboard = ({ user, onLogout }) => {
                 <main className="dashboard-main">
                     {activeSection === 'agenda' && (
                         <div className="section-content">
-                            <h2>Agenda del Día</h2>
+                            <div className="agenda-header-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <h2>{showAusentes ? 'Pacientes Ausentes' : 'Agenda del Día'}</h2>
+                                <button
+                                    className="btn-secondary"
+                                    onClick={() => setShowAusentes(!showAusentes)}
+                                >
+                                    {showAusentes ? 'Ver Agenda Activa' : 'Ver Ausentes'}
+                                </button>
+                            </div>
                             <div className="citas-list">
                                 {loadingCitas ? (
                                     <p>Cargando agenda...</p>
@@ -793,6 +862,36 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                                 >
                                                     Ver Historia
                                                 </button>
+                                                {!showAusentes ? (
+                                                    <button
+                                                        className="btn-danger-outline"
+                                                        style={{ marginLeft: '10px' }}
+                                                        onClick={() => handleMarcarNoAsistio(cita.id_cita)}
+                                                        title="Marcar como No Asistió"
+                                                    >
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                                                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                                            <circle cx="8.5" cy="7" r="4" />
+                                                            <line x1="18" y1="8" x2="23" y2="13" />
+                                                            <line x1="23" y1="8" x2="18" y2="13" />
+                                                        </svg>
+                                                        No Asistió
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        className="btn-success"
+                                                        style={{ marginLeft: '10px' }}
+                                                        onClick={() => handleRecuperarCita(cita.id_cita)}
+                                                        title="Recuperar Cita (Overbooking)"
+                                                    >
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                                                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                                            <circle cx="8.5" cy="7" r="4" />
+                                                            <polyline points="17 11 19 13 23 9" />
+                                                        </svg>
+                                                        Recuperar
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))

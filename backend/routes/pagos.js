@@ -49,11 +49,122 @@ router.post('/procesar', async (req, res) => {
 
         const costo_consulta = medico[0].costo_consulta || 50.00;
 
+        // --- VALIDACIÓN DE DÍA LABORAL (Domingo) ---
+        const [year, month, day] = fecha_cita.split('-').map(Number);
+        const fechaObj = new Date(year, month - 1, day);
+        const diaSemanaIndex = fechaObj.getDay();
+
+        if (diaSemanaIndex === 0) {
+            return res.status(400).json({
+                status: 'ERROR',
+                message: 'No es posible agendar citas los domingos.'
+            });
+        }
+
+        // --- VALIDACIÓN DE DISPONIBILIDAD REAL ---
+        const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+        const diaNombre = diasSemana[diaSemanaIndex];
+
+        const [dispCheck] = await db.query(
+            `SELECT id_disponibilidad, hora_inicio, hora_fin, intervalo_minutos 
+             FROM disponibilidad 
+             WHERE id_medico = ? AND dia_semana = ? 
+             AND ? BETWEEN fecha_inicio_vigencia AND fecha_fin_vigencia
+             AND estado = 'activo'
+             AND (
+                 (? = 'manana' AND hora_inicio < '14:00:00') OR
+                 (? = 'tarde' AND hora_inicio >= '14:00:00')
+             )`,
+            [id_medico, diaNombre, fecha_cita, turno || 'manana', turno || 'manana']
+        );
+
+        if (dispCheck.length === 0) {
+            return res.status(400).json({
+                status: 'ERROR',
+                message: 'El médico no tiene disponibilidad configurada para este día/turno.'
+            });
+        }
+
+        // --- VALIDACIÓN DE UNICIDAD (Anti-acaparamiento/reventa) ---
+        // Definir rangos de hora según el turno para buscar duplicados del paciente
+        const inicioTurno = turnoFinal === 'manana' ? '07:00:00' : '14:00:00';
+        const finTurno = turnoFinal === 'manana' ? '13:59:59' : '20:00:00';
+
+        const [citasExistentes] = await db.query(
+            `SELECT id_cita FROM cita 
+             WHERE id_paciente = ? AND fecha_cita = ? 
+             AND hora_cita >= ? AND hora_cita <= ?
+             AND estado NOT IN ('cancelada', 'no_asistio')`,
+            [id_paciente, fecha_cita, inicioTurno, finTurno]
+        );
+
+        if (citasExistentes.length > 0) {
+            return res.status(409).json({
+                status: 'ERROR',
+                message: `Ya tienes una cita programada para la ${turnoFinal} de este día. No se permite acaparar múltiples cupos en el mismo horario.`
+            });
+        }
+
         // Calcular hora de cita según el turno
         let hora_cita_calculada = hora_cita;
         if (!hora_cita) {
             // Si no se proporciona hora específica, usar la hora de inicio del turno
             hora_cita_calculada = turnoFinal === 'manana' ? '07:00:00' : '14:00:00';
+        }
+
+        // --- VALIDACIÓN 1: ANTI-ACAPARAMIENTO (Un usuario no puede tener dos citas activas con el mismo médico en el mismo turno) ---
+        const [existingAppointments] = await db.query(
+            `SELECT id_cita FROM cita 
+             WHERE id_paciente = ? AND id_medico = ? AND fecha_cita = ? 
+             AND hora_cita BETWEEN ? AND ?
+             AND estado NOT IN ('cancelada', 'no_asistio')`,
+            [id_paciente, id_medico, fecha_cita, inicioTurno, finTurno]
+        );
+
+        if (existingAppointments.length > 0) {
+            return res.status(409).json({
+                status: 'ERROR',
+                message: `Ya tienes una cita programada con este doctor en el turno ${turnoFinal}. Por favor, asiste a tu cita existente.`
+            });
+        }
+
+        // --- VALIDACIÓN 2: CONTROL DE AFORO (Capacidad Máxima del Médico) ---
+        // 2.1 Obtener configuración de disponibilidad para saber capacidad total
+        const [dispConfig] = await db.query(
+            `SELECT hora_inicio, hora_fin, intervalo_minutos 
+             FROM disponibilidad 
+             WHERE id_medico = ? AND dia_semana = ? 
+             AND ? BETWEEN fecha_inicio_vigencia AND fecha_fin_vigencia
+             AND estado = 'activo'
+             AND (
+                 (? = 'manana' AND hora_inicio < '14:00:00') OR
+                 (? = 'tarde' AND hora_inicio >= '14:00:00')
+             )`,
+            [id_medico, diaNombre, fecha_cita, turnoFinal, turnoFinal]
+        );
+
+        if (dispConfig.length > 0) {
+            const config = dispConfig[0];
+            const [h1, m1] = config.hora_inicio.split(':').map(Number);
+            const [h2, m2] = config.hora_fin.split(':').map(Number);
+            const minutosTotales = (h2 * 60 + m2) - (h1 * 60 + m1);
+            const capacidadMaxima = Math.floor(minutosTotales / (config.intervalo_minutos || 30));
+
+            // 2.2 Contar citas ocupadas en este turno
+            const [citasOcupadas] = await db.query(
+                `SELECT COUNT(*) as total FROM cita 
+                 WHERE id_medico = ? AND fecha_cita = ? 
+                 AND hora_cita BETWEEN ? AND ?
+                 AND estado NOT IN ('cancelada', 'no_asistio')`,
+                [id_medico, fecha_cita, config.hora_inicio, config.hora_fin]
+            );
+
+            if (citasOcupadas[0].total >= capacidadMaxima) {
+                return res.status(409).json({
+                    status: 'ERROR',
+                    message: `Lo sentimos, el doctor ha alcanzado su capacidad máxima (${capacidadMaxima} pacientes) para el turno ${turnoFinal}. Intente en otro horario o fecha.`
+                });
+            }
         }
 
         // Iniciar transacción

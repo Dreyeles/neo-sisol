@@ -968,3 +968,69 @@
   color: white;
   box-shadow: 0 4px 6px rgba(0, 163, 156, 0.2);
 }
+
+/* Sugerencia de disponibilidad */
+.availability-suggestion {
+  background: #ebf8ff;
+  border: 1px solid #bee3f8;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  animation: slideIn 0.3s ease;
+}
+
+.availability-suggestion p {
+  color: #2b6cb0;
+  font-size: 14px;
+  margin: 0 0 12px 0;
+  font-weight: 600;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.form-section-divider {
+  display: flex;
+  align-items: center;
+  margin: 24px 0 16px;
+  width: 100%;
+}
+
+.form-section-divider span {
+  color: var(--neo-teal);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  background: var(--neo-teal-light);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.form-section-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: #cbd5e0;
+  margin-left: 12px;
+}
+
+/* Responsive adjustments for the complete profile modal */
+@media (max-width: 640px) {
+  .payment-modal {
+    width: 95% !important;
+    margin: 10px !important;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}

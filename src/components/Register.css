@@ -345,3 +345,46 @@
 .password-toggle:hover {
   color: #2d3748;
 }
+
+.password-requirements {
+  margin-top: 8px;
+  list-style: none;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.requirement-item {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #718096;
+  transition: all 0.2s ease;
+}
+
+.requirement-item.met {
+  color: #008B85;
+  font-weight: 600;
+}
+
+.requirement-icon {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #edf2f7;
+  border-radius: 50%;
+  font-size: 10px;
+  color: #a0aec0;
+}
+
+.requirement-item.met .requirement-icon {
+  background: #00A39C;
+  color: white;
+}

@@ -140,4 +140,70 @@ router.get('/perfil-medico/:id_paciente', async (req, res) => {
     }
 });
 
+// Actualizar datos del paciente (Completar perfil)
+router.put('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            telefono,
+            direccion,
+            distrito,
+            provincia,
+            departamento,
+            fecha_nacimiento,
+            genero,
+            contacto_emergencia_nombre,
+            contacto_emergencia_telefono,
+            contacto_emergencia_relacion
+        } = req.body;
+
+        const [result] = await db.query(
+            `UPDATE paciente SET 
+                telefono = ?, 
+                direccion = ?, 
+                distrito = ?, 
+                provincia = ?, 
+                departamento = ?, 
+                fecha_nacimiento = ?, 
+                genero = ?, 
+                contacto_emergencia_nombre = ?, 
+                contacto_emergencia_telefono = ?, 
+                contacto_emergencia_relacion = ?
+             WHERE id_paciente = ?`,
+            [
+                telefono,
+                direccion,
+                distrito,
+                provincia,
+                departamento,
+                fecha_nacimiento,
+                genero,
+                contacto_emergencia_nombre,
+                contacto_emergencia_telefono,
+                contacto_emergencia_relacion,
+                id
+            ]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                status: 'ERROR',
+                message: 'Paciente no encontrado'
+            });
+        }
+
+        res.json({
+            status: 'OK',
+            message: 'Perfil actualizado exitosamente'
+        });
+    } catch (error) {
+        console.error('Error al actualizar paciente:', error);
+        res.status(500).json({
+            status: 'ERROR',
+            message: 'Error al actualizar paciente',
+            error: error.message
+        });
+    }
+});
+
 export default router;
