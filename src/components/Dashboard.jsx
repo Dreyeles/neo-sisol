@@ -1301,7 +1301,7 @@ const Dashboard = ({ user, onLogout }) => {
                               Object.assign(user, profileData);
                               setShowCompleteProfileModal(false);
                             } else {
-                              alert('Error: ' + data.message);
+                              alert('Error: ' + (data.details || data.message));
                             }
                           } catch (err) {
                             console.error(err);

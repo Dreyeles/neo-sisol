@@ -201,7 +201,7 @@ router.put('/:id', async (req, res) => {
         res.status(500).json({
             status: 'ERROR',
             message: 'Error al actualizar paciente',
-            error: error.message
+            details: error.message
         });
     }
 });
