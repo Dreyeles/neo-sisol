@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import db from './config/database.js';
+import fs from 'fs';
 
 // Importar rutas
 import authRoutes from './routes/auth.js';
@@ -28,6 +29,12 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Middleware de diagnóstico: Log de peticiones
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
 
 // Ruta de prueba
 app.get('/api/health', (req, res) => {
@@ -70,7 +77,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Servir archivos estáticos del frontend en producción
 const distPath = path.join(__dirname, '../dist');
-app.use(express.static(distPath));
+console.log(`🔍 Verificando carpeta dist en: ${distPath}`);
+
+if (fs.existsSync(distPath)) {
+    console.log('✅ Carpeta dist encontrada');
+    app.use(express.static(distPath));
+} else {
+    console.warn('⚠️ ADVERTENCIA: Carpeta dist NO encontrada. Asegúrate de ejecutar npm run build');
+}
 
 // Manejar cualquier otra ruta con el index.html del frontend (para SPA)
 app.get('*', (req, res, next) => {
@@ -78,7 +92,13 @@ app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) {
         return next();
     }
-    res.sendFile(path.join(distPath, 'index.html'));
+
+    const indexPath = path.join(distPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.status(404).send('Frontend no encontrado. Por favor espera a que termine el build o verifica los logs.');
+    }
 });
 
 // Manejo de rutas no encontradas
