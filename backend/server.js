@@ -100,8 +100,8 @@ app.use((err, req, res, next) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`🗄️  Test DB: http://localhost:${PORT}/api/test-db`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Servidor corriendo en http://0.0.0.0:${PORT}`);
+    console.log(`📊 Health check: /api/health`);
+    console.log(`🗄️  Test DB: /api/test-db`);
 });
