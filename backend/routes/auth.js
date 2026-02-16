@@ -74,7 +74,7 @@ router.post('/register', async (req, res) => {
 
             const id_usuario = userResult.insertId;
 
-            // 2. Insertar paciente
+            // 2. Insertar paciente con valores por defecto para campos obligatorios
             await connection.query(
                 `INSERT INTO paciente (
           id_usuario, dni, nombres, apellidos, fecha_nacimiento, genero,
@@ -83,7 +83,12 @@ router.post('/register', async (req, res) => {
           estado
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
-                    id_usuario, dni, nombres, apellidos, fecha_nacimiento || null, genero || null,
+                    id_usuario,
+                    dni,
+                    nombres,
+                    apellidos,
+                    fecha_nacimiento || '1990-01-01', // Valor por defecto NOT NULL
+                    genero || 'otro',                // Valor por defecto NOT NULL
                     telefono || null, celular || null, direccion || null,
                     distrito || null, provincia || null, departamento || null,
                     contacto_emergencia_nombre || null, contacto_emergencia_telefono || null, contacto_emergencia_relacion || null,
