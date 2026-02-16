@@ -6,7 +6,10 @@ export default defineConfig({
   server: {
     port: 3000,
     host: '0.0.0.0',
-    open: true
+    allowedHosts: true, // Permite que Railway acceda al servidor de desarrollo si es necesario
+    hmr: {
+      clientPort: 443 // Importante para que HMR funcione tras el proxy de Railway
+    }
   }
 });
 
