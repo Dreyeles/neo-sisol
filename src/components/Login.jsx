@@ -98,7 +98,7 @@ const Login = ({ isOpen = false, onClose = () => { }, onSwitchToRegister, onLogi
         const adaptedUser = {
           email: userData.email,
           nombre: userData.nombres || userData.nombre || 'Usuario',
-          role: userData.tipo_usuario === 'medico' ? 'doctor' : userData.tipo_usuario === 'administrativo' ? 'admin' : 'patient',
+          role: userData.tipo_usuario === 'medico' ? 'doctor' : (userData.tipo_usuario === 'admin' || userData.tipo_usuario === 'administrativo') ? 'admin' : 'patient',
           id: userData.id_usuario,
           // Guardar IDs específicos según rol
           id_paciente: userData.id_paciente,
