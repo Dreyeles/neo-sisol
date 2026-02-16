@@ -1289,10 +1289,14 @@ const Dashboard = ({ user, onLogout }) => {
                           }
                           setSavingProfile(true);
                           try {
+                            const dataToSend = {
+                              ...profileData,
+                              fecha_nacimiento: profileData.fecha_nacimiento ? profileData.fecha_nacimiento.split('T')[0] : null
+                            };
                             const res = await fetch(`${API_BASE_URL}/api/pacientes/${user.id_paciente}`, {
                               method: 'PUT',
                               headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify(profileData)
+                              body: JSON.stringify(dataToSend)
                             });
                             const data = await res.json();
                             if (data.status === 'OK') {
