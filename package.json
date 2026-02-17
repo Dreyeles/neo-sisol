@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "server": "cd backend && npm run dev",
+    "server": "npm run dev --prefix \"c:\\Users\\User\\Desktop\\TAREAS\\CICLO_4\\Desarrollo de aplicaciones Backend\\SISOL\\neo_sisol_react2\\backend-central\"",
     "start": "concurrently \"npm run server\" \"npm run dev\"",
     "build": "vite build",
     "preview": "vite preview"
