@@ -132,6 +132,18 @@ const Dashboard = ({ user, onLogout }) => {
     }
   }, [showPaymentModal]);
 
+  // Prevenir scroll del body cuando cualquier modal está abierto
+  useEffect(() => {
+    if (showPaymentModal || showCompleteProfileModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showPaymentModal, showCompleteProfileModal]);
+
   // Control del temporizador de pago
   useEffect(() => {
     let timer;

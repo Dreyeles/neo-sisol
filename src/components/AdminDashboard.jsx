@@ -245,6 +245,18 @@ const AdminDashboard = ({ user, onLogout }) => {
         setFilterDepartamento('');
     }, [activeSection]);
 
+    // Prevenir scroll del body cuando cualquier modal está abierto
+    useEffect(() => {
+        if (showProfileModal || showEditDoctorModal || showEditServiceModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showProfileModal, showEditDoctorModal, showEditServiceModal]);
+
     return (
         <div className="dashboard admin-dashboard">
             <div className="dashboard-sidebar">

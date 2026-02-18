@@ -150,6 +150,18 @@ const DoctorDashboard = ({ user, onLogout }) => {
     const [sintomasList, setSintomasList] = useState([]);
     const [nuevoSintoma, setNuevoSintoma] = useState('');
 
+    // Prevenir scroll del body cuando cualquier modal está abierto
+    useEffect(() => {
+        if (showConsultaModal || showHistorialModal || showPerfilMedicoModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showConsultaModal, showHistorialModal, showPerfilMedicoModal]);
+
     // Handlers genéricos para las nuevas listas
     const handleAddToList = (setter, inputSetter, value, list) => {
         if (value.trim()) {

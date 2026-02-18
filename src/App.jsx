@@ -21,6 +21,18 @@ function App() {
 
   const [isServiciosOpen, setIsServiciosOpen] = useState(false);
 
+  // Prevenir scroll del body cuando cualquier modal está abierto
+  React.useEffect(() => {
+    if (isLoginOpen || isRegisterOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isLoginOpen, isRegisterOpen]);
+
   const handleOpenLogin = () => {
     setIsRegisterOpen(false);
     setIsLoginOpen(true);
