@@ -171,7 +171,7 @@
 
 .modal-content.consulta-modal {
     background: white;
-    border-radius: 16px;
+    border-radius: 32px;
     width: 90%;
     max-width: 800px;
     height: 90vh;
@@ -505,7 +505,7 @@
 /* Historial Modal Styles */
 .historial-modal {
     background: white;
-    border-radius: 16px;
+    border-radius: 32px;
     width: 95%;
     max-width: 900px;
     height: 85vh;
