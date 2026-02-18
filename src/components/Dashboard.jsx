@@ -580,6 +580,11 @@ const Dashboard = ({ user, onLogout }) => {
       // Determinar el método de pago final para enviar al backend
       const metodoPagoFinal = metodoPago === 'billetera_digital' ? billeteraEspecifica : metodoPago;
 
+      // Para billeteras digitales (especialmente Yape), el código de aprobación es el número de transacción
+      const finalTxNumber = (metodoPago === 'billetera_digital' && billeteraEspecifica === 'yape')
+        ? (codigoAprobacion || `YAP-${Date.now()}`)
+        : (numeroTransaccion || `TXN-${Date.now()}`);
+
       const payload = {
         id_paciente: user.id_paciente,
         id_medico: citaMedico,
@@ -587,7 +592,7 @@ const Dashboard = ({ user, onLogout }) => {
         turno: citaTurno,
         motivo_consulta: citaMotivo,
         metodo_pago: metodoPagoFinal,
-        numero_transaccion: numeroTransaccion || undefined,
+        numero_transaccion: finalTxNumber,
         comprobante_tipo: 'boleta'
       };
 
@@ -1126,15 +1131,17 @@ const Dashboard = ({ user, onLogout }) => {
                       {/* Campos específicos para Yape y Plin */}
                       {metodoPago === 'billetera_digital' && (billeteraEspecifica === 'yape' || billeteraEspecifica === 'plin') && (
                         <div className="payment-fields">
-                          <div className="form-group">
-                            <label>Código de Aprobación</label>
-                            <input
-                              type="text"
-                              placeholder="Ingrese el código de aprobación"
-                              value={codigoAprobacion}
-                              onChange={(e) => setCodigoAprobacion(e.target.value)}
-                            />
-                          </div>
+                          {billeteraEspecifica === 'yape' && (
+                            <div className="form-group">
+                              <label>Código de Aprobación</label>
+                              <input
+                                type="text"
+                                placeholder="Ingrese el código de aprobación"
+                                value={codigoAprobacion}
+                                onChange={(e) => setCodigoAprobacion(e.target.value)}
+                              />
+                            </div>
+                          )}
 
                           <div className="form-group">
                             <label>Escanea el código QR para pagar con {billeteraEspecifica === 'yape' ? 'Yape' : 'Plin'}</label>
