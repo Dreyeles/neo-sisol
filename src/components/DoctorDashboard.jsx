@@ -1,3 +1,4 @@
+// Solución de pantalla blanca - Forzando despliegue en Railway
 import React, { useState, useEffect } from 'react';
 import { jsPDF } from "jspdf";
 import './Dashboard.css'; // Reusing existing dashboard styles
