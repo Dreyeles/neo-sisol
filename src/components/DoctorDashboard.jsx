@@ -10,6 +10,85 @@ const DoctorDashboard = ({ user, onLogout }) => {
     const [citas, setCitas] = useState([]);
     const [loadingCitas, setLoadingCitas] = useState(false);
     const [especialidadNombre, setEspecialidadNombre] = useState('Cargando...');
+    const [pacientes, setPacientes] = useState([]);
+    const [loadingPacientes, setLoadingPacientes] = useState(false);
+    const [showAusentes, setShowAusentes] = useState(false);
+    const [showConsultaModal, setShowConsultaModal] = useState(false);
+    const [consultaActual, setConsultaActual] = useState(null);
+    const [consultaStep, setConsultaStep] = useState(1); // 1: Datos/Triaje, 2: Consulta, 3: Tratamiento
+    const [previousVitals, setPreviousVitals] = useState(null);
+    const [existingBloodType, setExistingBloodType] = useState(null);
+    const [showHistorialModal, setShowHistorialModal] = useState(false);
+    const [showPerfilMedicoModal, setShowPerfilMedicoModal] = useState(false);
+    const [historialData, setHistorialData] = useState([]);
+    const [pacienteHistorial, setPacienteHistorial] = useState(null);
+    const [perfilMedicoData, setPerfilMedicoData] = useState(null);
+
+    const [consultaForm, setConsultaForm] = useState({
+        peso: '',
+        talla: '',
+        presion_arterial: '',
+        temperatura: '',
+        grupo_sanguineo: '',
+        alergias: '',
+        enfermedades_cronicas: '',
+        cirugias_previas: '',
+        medicamentos_actuales: '',
+        antecedentes_familiares: '',
+        antecedentes_personales: '',
+        vacunas: '',
+        motivo_consulta: '',
+        sintomas: '',
+        diagnostico: '',
+        observaciones: '',
+        tratamiento: '',
+        receta_medica: '',
+        proxima_cita: ''
+    });
+
+    const [medicamentosList, setMedicamentosList] = useState([]);
+    const [nuevoMedicamento, setNuevoMedicamento] = useState({ nombre: '', dosis: '', frecuencia: '', duracion: '', notas: '' });
+    const [diagnosticosList, setDiagnosticosList] = useState([]);
+    const [nuevoDiagnostico, setNuevoDiagnostico] = useState('');
+    const [tratamientosList, setTratamientosList] = useState([]);
+    const [nuevoTratamiento, setNuevoTratamiento] = useState('');
+
+    const [alergiasList, setAlergiasList] = useState([]);
+    const [nuevaAlergia, setNuevaAlergia] = useState('');
+    const [enfermedadesCronicasList, setEnfermedadesCronicasList] = useState([]);
+    const [nuevaEnfermedad, setNuevaEnfermedad] = useState('');
+    const [cirugiasPreviasList, setCirugiasPreviasList] = useState([]);
+    const [nuevaCirugia, setNuevaCirugia] = useState('');
+    const [medicamentosActualesList, setMedicamentosActualesList] = useState([]);
+    const [nuevoMedHabitual, setNuevoMedHabitual] = useState('');
+    const [antecedentesFamiliaresList, setAntecedentesFamiliaresList] = useState([]);
+    const [nuevoAntFamiliar, setNuevoAntFamiliar] = useState('');
+    const [antecedentesPersonalesList, setAntecedentesPersonalesList] = useState([]);
+    const [nuevoAntPersonal, setNuevoAntPersonal] = useState('');
+    const [vacunasList, setVacunasList] = useState([]);
+    const [nuevaVacuna, setNuevaVacuna] = useState('');
+    const [nuevaDosisVacuna, setNuevaDosisVacuna] = useState('');
+    const [sintomasList, setSintomasList] = useState([]);
+    const [nuevoSintoma, setNuevoSintoma] = useState('');
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchDate, setSearchDate] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [loadingSearch, setLoadingSearch] = useState(false);
+
+    const [archivosPaciente, setArchivosPaciente] = useState([]);
+    const [loadingArchivos, setLoadingArchivos] = useState(false);
+    const [fileToUpload, setFileToUpload] = useState(null);
+    const [fileType, setFileType] = useState('Informe');
+    const [fileDesc, setFileDesc] = useState('');
+    const [uploadingFile, setUploadingFile] = useState(false);
+
+    const [solicitarExamen, setSolicitarExamen] = useState(false);
+    const [departamentos, setDepartamentos] = useState([]);
+    const [serviciosExamen, setServiciosExamen] = useState([]);
+    const [examenDepto, setExamenDepto] = useState('');
+    const [examenServicio, setExamenServicio] = useState('');
+    const [examenesAgregados, setExamenesAgregados] = useState([]);
 
     // Cargar citas del médico
     const fetchCitas = async () => {
@@ -27,9 +106,6 @@ const DoctorDashboard = ({ user, onLogout }) => {
             setLoadingCitas(false);
         }
     };
-
-    const [pacientes, setPacientes] = useState([]);
-    const [loadingPacientes, setLoadingPacientes] = useState(false);
 
     // Cargar pacientes del médico
     const fetchPacientes = async () => {
@@ -73,43 +149,11 @@ const DoctorDashboard = ({ user, onLogout }) => {
         }
     }, [user, activeSection]);
 
-    // Filtrar citas para el día de hoy
-    const [showAusentes, setShowAusentes] = useState(false);
-
     const agendaDelDia = citas.filter(c =>
         showAusentes
             ? c.estado === 'no_asistio'
             : (c.estado === 'programada' || c.estado === 'confirmada' || c.estado === 'pagado')
     );
-
-    console.log('DoctorDashboard: Citas filtradas (Ausentes: ' + showAusentes + '):', agendaDelDia);
-
-    const [showConsultaModal, setShowConsultaModal] = useState(false);
-    const [consultaActual, setConsultaActual] = useState(null);
-    const [consultaStep, setConsultaStep] = useState(1); // 1: Datos/Triaje, 2: Consulta, 3: Tratamiento
-    const [previousVitals, setPreviousVitals] = useState(null);
-    const [existingBloodType, setExistingBloodType] = useState(null);
-    const [consultaForm, setConsultaForm] = useState({
-        peso: '',
-        talla: '',
-        presion_arterial: '',
-        temperatura: '',
-        grupo_sanguineo: '',
-        alergias: '',
-        enfermedades_cronicas: '',
-        cirugias_previas: '',
-        medicamentos_actuales: '',
-        antecedentes_familiares: '',
-        antecedentes_personales: '',
-        vacunas: '',
-        motivo_consulta: '',
-        sintomas: '',
-        diagnostico: '',
-        observaciones: '',
-        tratamiento: '',
-        receta_medica: '',
-        proxima_cita: ''
-    });
 
     const handleConsultaChange = (e) => {
         const { name, value } = e.target;
@@ -118,37 +162,6 @@ const DoctorDashboard = ({ user, onLogout }) => {
             [name]: value
         }));
     };
-
-    const [medicamentosList, setMedicamentosList] = useState([]);
-    const [nuevoMedicamento, setNuevoMedicamento] = useState({ nombre: '', dosis: '', frecuencia: '', duracion: '', notas: '' });
-
-    // Listas estructuradas para Diagnóstico y Tratamiento
-    const [diagnosticosList, setDiagnosticosList] = useState([]);
-    const [nuevoDiagnostico, setNuevoDiagnostico] = useState('');
-    const [tratamientosList, setTratamientosList] = useState([]);
-    const [nuevoTratamiento, setNuevoTratamiento] = useState('');
-
-    // --- NUEVAS LISTAS ESTRUCTURADAS ---
-    // Antecedentes
-    const [alergiasList, setAlergiasList] = useState([]);
-    const [nuevaAlergia, setNuevaAlergia] = useState('');
-    const [enfermedadesCronicasList, setEnfermedadesCronicasList] = useState([]);
-    const [nuevaEnfermedad, setNuevaEnfermedad] = useState('');
-    const [cirugiasPreviasList, setCirugiasPreviasList] = useState([]);
-    const [nuevaCirugia, setNuevaCirugia] = useState('');
-    const [medicamentosActualesList, setMedicamentosActualesList] = useState([]);
-    const [nuevoMedHabitual, setNuevoMedHabitual] = useState('');
-    const [antecedentesFamiliaresList, setAntecedentesFamiliaresList] = useState([]);
-    const [nuevoAntFamiliar, setNuevoAntFamiliar] = useState('');
-    const [antecedentesPersonalesList, setAntecedentesPersonalesList] = useState([]);
-    const [nuevoAntPersonal, setNuevoAntPersonal] = useState('');
-    const [vacunasList, setVacunasList] = useState([]);
-    const [nuevaVacuna, setNuevaVacuna] = useState('');
-    const [nuevaDosisVacuna, setNuevaDosisVacuna] = useState('');
-
-    // Consulta
-    const [sintomasList, setSintomasList] = useState([]);
-    const [nuevoSintoma, setNuevoSintoma] = useState('');
 
     // Prevenir scroll del body cuando cualquier modal está abierto
     useEffect(() => {
@@ -322,9 +335,6 @@ const DoctorDashboard = ({ user, onLogout }) => {
     };
 
 
-    const [showHistorialModal, setShowHistorialModal] = useState(false);
-    const [historialData, setHistorialData] = useState([]);
-    const [pacienteHistorial, setPacienteHistorial] = useState(null);
 
     const handleVerHistorialPaciente = async (paciente) => {
         // Soporte para cuando se pasa solo el ID o el objeto completo
@@ -537,11 +547,6 @@ const DoctorDashboard = ({ user, onLogout }) => {
         doc.save(`SISOL_${tipo}_${pacienteHistorial?.dni || 'atencion'}.pdf`);
     };
 
-    // Estados para búsqueda
-    const [searchTerm, setSearchTerm] = useState('');
-    const [searchDate, setSearchDate] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
-    const [loadingSearch, setLoadingSearch] = useState(false);
 
     const handleSearchPacientes = async () => {
         setLoadingSearch(true);
@@ -566,16 +571,8 @@ const DoctorDashboard = ({ user, onLogout }) => {
         }
     };
 
-    const [showPerfilMedicoModal, setShowPerfilMedicoModal] = useState(false);
-    const [perfilMedicoData, setPerfilMedicoData] = useState(null);
 
     // --- ESTADOS Y FUNCIONES PARA ARCHIVOS MÉDICOS ---
-    const [archivosPaciente, setArchivosPaciente] = useState([]);
-    const [loadingArchivos, setLoadingArchivos] = useState(false);
-    const [fileToUpload, setFileToUpload] = useState(null);
-    const [fileType, setFileType] = useState('Informe');
-    const [fileDesc, setFileDesc] = useState('');
-    const [uploadingFile, setUploadingFile] = useState(false);
 
     const fetchArchivosPaciente = async (id_paciente) => {
         setLoadingArchivos(true);
@@ -655,13 +652,6 @@ const DoctorDashboard = ({ user, onLogout }) => {
         }
     };
 
-    // Lógica para Exámenes Auxiliares
-    const [solicitarExamen, setSolicitarExamen] = useState(false);
-    const [departamentos, setDepartamentos] = useState([]);
-    const [serviciosExamen, setServiciosExamen] = useState([]);
-    const [examenDepto, setExamenDepto] = useState('');
-    const [examenServicio, setExamenServicio] = useState('');
-    const [examenesAgregados, setExamenesAgregados] = useState([]);
 
     // Cargar departamentos al iniciar
     useEffect(() => {
