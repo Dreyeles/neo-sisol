@@ -128,6 +128,41 @@ const DoctorDashboard = ({ user, onLogout }) => {
     const [tratamientosList, setTratamientosList] = useState([]);
     const [nuevoTratamiento, setNuevoTratamiento] = useState('');
 
+    // --- NUEVAS LISTAS ESTRUCTURADAS ---
+    // Antecedentes
+    const [alergiasList, setAlergiasList] = useState([]);
+    const [nuevaAlergia, setNuevaAlergia] = useState('');
+    const [enfermedadesCronicasList, setEnfermedadesCronicasList] = useState([]);
+    const [nuevaEnfermedad, setNuevaEnfermedad] = useState('');
+    const [cirugiasPreviasList, setCirugiasPreviasList] = useState([]);
+    const [nuevaCirugia, setNuevaCirugia] = useState('');
+    const [medicamentosActualesList, setMedicamentosActualesList] = useState([]);
+    const [nuevoMedHabitual, setNuevoMedHabitual] = useState('');
+    const [antecedentesFamiliaresList, setAntecedentesFamiliaresList] = useState([]);
+    const [nuevoAntFamiliar, setNuevoAntFamiliar] = useState('');
+    const [antecedentesPersonalesList, setAntecedentesPersonalesList] = useState([]);
+    const [nuevoAntPersonal, setNuevoAntPersonal] = useState('');
+    const [vacunasList, setVacunasList] = useState([]);
+    const [nuevaVacuna, setNuevaVacuna] = useState('');
+
+    // Consulta
+    const [sintomasList, setSintomasList] = useState([]);
+    const [nuevoSintoma, setNuevoSintoma] = useState('');
+
+    // Handlers genéricos para las nuevas listas
+    const handleAddToList = (setter, inputSetter, value, list) => {
+        if (value.trim()) {
+            setter([...list, value.trim()]);
+            inputSetter('');
+        }
+    };
+
+    const handleRemoveFromList = (setter, list, idx) => {
+        const newList = [...list];
+        newList.splice(idx, 1);
+        setter(newList);
+    };
+
     const handleAgregarDiagnostico = () => {
         if (nuevoDiagnostico.trim()) {
             setDiagnosticosList([...diagnosticosList, nuevoDiagnostico.trim()]);
@@ -176,37 +211,65 @@ const DoctorDashboard = ({ user, onLogout }) => {
         setPreviousVitals(null);
         setExistingBloodType(null);
         setExamenesAgregados([]);
-        setMedicamentosList([]); // Reset medicamentos
-        setDiagnosticosList([]); // Reset
-        setTratamientosList([]); // Reset
+        setMedicamentosList([]);
+        setDiagnosticosList([]);
+        setTratamientosList([]);
+
+        // Reset nuevas listas
+        setAlergiasList([]);
+        setEnfermedadesCronicasList([]);
+        setCirugiasPreviasList([]);
+        setMedicamentosActualesList([]);
+        setAntecedentesFamiliaresList([]);
+        setAntecedentesPersonalesList([]);
+        setVacunasList([]);
+        setSintomasList([]);
+
         setSolicitarExamen(false);
         setConsultaStep(1);
 
         // Fetch patient data for context
         try {
-            // Obtain blood type from profile
             const profileResp = await fetch(`${API_BASE_URL}/api/pacientes/perfil-medico/${cita.id_paciente}`);
             const profileData = await profileResp.json();
 
-            // Obtain history for previous vitals
             const historyResp = await fetch(`${API_BASE_URL}/api/atencion/historial/${cita.id_paciente}`);
             const historyData = await historyResp.json();
 
             let bloodType = '';
             let prevVitals = null;
             let historial = {};
+            let pData = {};
 
             if (profileData.status === 'OK') {
-                bloodType = profileData.data.grupo_sanguineo || '';
+                pData = profileData.data;
+                bloodType = pData.grupo_sanguineo || '';
                 setExistingBloodType(bloodType);
-                historial = profileData.data.historial_medico || {};
+                historial = pData.historial_medico || {};
+
+                // Intentar parsear listas de antecedentes si vienen como JSON
+                const parseList = (str) => {
+                    if (!str) return [];
+                    try {
+                        const parsed = JSON.parse(str);
+                        return Array.isArray(parsed) ? parsed : [str];
+                    } catch (e) {
+                        return [str];
+                    }
+                };
+
+                setAlergiasList(parseList(pData.alergias));
+                setEnfermedadesCronicasList(parseList(historial.enfermedades_cronicas));
+                setCirugiasPreviasList(parseList(historial.cirugias_previas));
+                setMedicamentosActualesList(parseList(historial.medicamentos_actuales));
+                setAntecedentesFamiliaresList(parseList(historial.antecedentes_familiares));
+                setAntecedentesPersonalesList(parseList(historial.antecedentes_personales));
+                setVacunasList(parseList(historial.vacunas));
             }
 
             if (historyData.status === 'OK' && historyData.data.length > 0) {
-                // Assuming first item is latest due to DESC order
                 const latest = historyData.data[0];
                 let signs = latest.signos_vitales;
-                // Parse if string (though usually object if JSON column)
                 if (typeof signs === 'string') {
                     try { signs = JSON.parse(signs); } catch (e) { }
                 }
@@ -217,23 +280,10 @@ const DoctorDashboard = ({ user, onLogout }) => {
             setConsultaForm(prev => ({
                 ...prev,
                 motivo_consulta: cita.motivo_consulta || '',
-                // Prefill blood type if exists
                 grupo_sanguineo: bloodType,
-
-                // Clear vitals for new entry
                 peso: '', talla: '', presion_arterial: '', temperatura: '',
-
-                // Other fields
-                alergias: profileData.data?.alergias || '',
-                enfermedades_cronicas: historial.enfermedades_cronicas || '',
-                cirugias_previas: historial.cirugias_previas || '',
-                medicamentos_actuales: historial.medicamentos_actuales || '',
-                antecedentes_familiares: historial.antecedentes_familiares || '',
-                antecedentes_personales: historial.antecedentes_personales || '',
-                vacunas: historial.vacunas || '',
-
-                sintomas: '', diagnostico: '', observaciones: '',
-                tratamiento: '', receta_medica: '', proxima_cita: ''
+                observaciones: '',
+                proxima_cita: ''
             }));
 
             setShowConsultaModal(true);
@@ -343,12 +393,31 @@ const DoctorDashboard = ({ user, onLogout }) => {
 
             // Renderizar secciones dinámicas
             yPos = renderStructuredSection("Motivo", atencion.motivo_consulta, yPos);
-            yPos = renderStructuredSection("Diagnóstico", atencion.diagnostico, yPos);
-            yPos = renderStructuredSection("Tratamiento / Indicaciones", atencion.tratamiento, yPos);
+
+            // --- NUEVAS SECCIONES ESTRUCTURADAS ---
+            doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+            doc.text("ANTECEDENTES PATOLÓGICOS:", 20, yPos);
+            yPos += 7;
+            doc.setFontSize(10);
+
+            yPos = renderStructuredSection("• Alergias", atencion.alergias, yPos);
+            yPos = renderStructuredSection("• Enfermedades Crónicas", atencion.enfermedades_cronicas, yPos);
+            yPos = renderStructuredSection("• Cirugías Previas", atencion.cirugias_previas, yPos);
+            yPos = renderStructuredSection("• Medicamentos Habituales", atencion.medicamentos_actuales, yPos);
+            yPos = renderStructuredSection("• Antecedentes Familiares", atencion.antecedentes_familiares, yPos);
+            yPos = renderStructuredSection("• Antecedentes Personales", atencion.antecedentes_personales, yPos);
+            yPos = renderStructuredSection("• Vacunas", atencion.vacunas, yPos);
+
+            doc.line(20, yPos, 190, yPos);
+            yPos += 10;
+
+            yPos = renderStructuredSection("SÍNTOMAS / ANAMNESIS", atencion.sintomas, yPos);
+            yPos = renderStructuredSection("DIAGNÓSTICO", atencion.diagnostico, yPos);
+            yPos = renderStructuredSection("TRATAMIENTO / INDICACIONES", atencion.tratamiento, yPos);
 
             // Observaciones sigue siendo texto plano mayormente, pero usamos el helper por consistencia
             if (atencion.observaciones) {
-                yPos = renderStructuredSection("Observaciones", atencion.observaciones, yPos);
+                yPos = renderStructuredSection("OBSERVACIONES", atencion.observaciones, yPos);
             }
 
             // Manejo especial para Receta Médica (Tabla)
@@ -643,26 +712,30 @@ const DoctorDashboard = ({ user, onLogout }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     id_cita: consultaActual.id_cita,
-                    id_paciente: consultaActual.id_paciente || 1, // Fallback temporal si no viene
+                    id_paciente: consultaActual.id_paciente || 1,
                     id_medico: user.id_medico,
                     peso: consultaForm.peso,
                     talla: consultaForm.talla,
                     presion_arterial: consultaForm.presion_arterial,
                     temperatura: consultaForm.temperatura,
                     grupo_sanguineo: consultaForm.grupo_sanguineo,
-                    alergias: consultaForm.alergias,
-                    enfermedades_cronicas: consultaForm.enfermedades_cronicas,
-                    cirugias_previas: consultaForm.cirugias_previas,
-                    medicamentos_actuales: consultaForm.medicamentos_actuales,
-                    antecedentes_familiares: consultaForm.antecedentes_familiares,
-                    antecedentes_personales: consultaForm.antecedentes_personales,
-                    vacunas: consultaForm.vacunas,
+
+                    // Nuevos campos estructurados como JSON
+                    alergias: JSON.stringify(alergiasList),
+                    enfermedades_cronicas: JSON.stringify(enfermedadesCronicasList),
+                    cirugias_previas: JSON.stringify(cirugiasPreviasList),
+                    medicamentos_actuales: JSON.stringify(medicamentosActualesList),
+                    antecedentes_familiares: JSON.stringify(antecedentesFamiliaresList),
+                    antecedentes_personales: JSON.stringify(antecedentesPersonalesList),
+                    vacunas: JSON.stringify(vacunasList),
+
                     motivo_consulta: consultaForm.motivo_consulta,
-                    sintomas: consultaForm.sintomas,
+                    sintomas: JSON.stringify(sintomasList),
                     observaciones: consultaForm.observaciones,
                     proxima_cita: consultaForm.proxima_cita,
-                    diagnostico: JSON.stringify(diagnosticosList), // Guardar como JSON
-                    tratamiento: JSON.stringify(tratamientosList), // Guardar como JSON
+
+                    diagnostico: JSON.stringify(diagnosticosList),
+                    tratamiento: JSON.stringify(tratamientosList),
                     receta_medica: JSON.stringify(medicamentosList),
                     examenes_solicitados: JSON.stringify(examenesAgregados)
                 })
@@ -673,7 +746,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
             if (data.status === 'OK') {
                 alert('Atención médica registrada exitosamente');
                 setShowConsultaModal(false);
-                fetchCitas(); // Recargar agenda
+                fetchCitas();
             } else {
                 alert('Error al registrar atención: ' + data.message);
             }
@@ -1171,38 +1244,162 @@ const DoctorDashboard = ({ user, onLogout }) => {
                             {consultaStep === 2 && (
                                 <div className="step-content">
                                     <h3>Antecedentes Médicos</h3>
-                                    <div className="form-group">
-                                        <label>Alergias</label>
-                                        <textarea name="alergias" value={consultaForm.alergias} onChange={handleConsultaChange} rows="2" placeholder="Alergias a medicamentos, alimentos, etc." />
-                                    </div>
-                                    <div className="form-row">
+
+                                    <div className="clinical-list-section">
                                         <div className="form-group">
-                                            <label>Enfermedades Crónicas</label>
-                                            <textarea name="enfermedades_cronicas" value={consultaForm.enfermedades_cronicas} onChange={handleConsultaChange} rows="2" placeholder="Diabetes, Hipertensión, etc." />
+                                            <label>Alergias</label>
+                                            <div className="list-input-group">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Alergia a medicamentos, alimentos, etc."
+                                                    value={nuevaAlergia}
+                                                    onChange={(e) => setNuevaAlergia(e.target.value)}
+                                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddToList(setAlergiasList, setNuevaAlergia, nuevaAlergia, alergiasList))}
+                                                />
+                                                <button type="button" className="btn-secondary" onClick={() => handleAddToList(setAlergiasList, setNuevaAlergia, nuevaAlergia, alergiasList)}>Añadir</button>
+                                            </div>
+                                            <ul className="clinical-tags">
+                                                {alergiasList.map((item, idx) => (
+                                                    <li key={idx} className="clinical-tag red">
+                                                        <span>{item}</span>
+                                                        <button type="button" onClick={() => handleRemoveFromList(setAlergiasList, alergiasList, idx)}>×</button>
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label>Enfermedades Crónicas</label>
+                                                <div className="list-input-group">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Diabetes, Hipertensión, etc."
+                                                        value={nuevaEnfermedad}
+                                                        onChange={(e) => setNuevaEnfermedad(e.target.value)}
+                                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddToList(setEnfermedadesCronicasList, setNuevaEnfermedad, nuevaEnfermedad, enfermedadesCronicasList))}
+                                                    />
+                                                    <button type="button" className="btn-secondary" onClick={() => handleAddToList(setEnfermedadesCronicasList, setNuevaEnfermedad, nuevaEnfermedad, enfermedadesCronicasList)}>Añadir</button>
+                                                </div>
+                                                <ul className="clinical-tags">
+                                                    {enfermedadesCronicasList.map((item, idx) => (
+                                                        <li key={idx} className="clinical-tag blue">
+                                                            <span>{item}</span>
+                                                            <button type="button" onClick={() => handleRemoveFromList(setEnfermedadesCronicasList, enfermedadesCronicasList, idx)}>×</button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                            <div className="form-group">
+                                                <label>Cirugías Previas</label>
+                                                <div className="list-input-group">
+                                                    <input
+                                                        type="text"
+                                                        value={nuevaCirugia}
+                                                        onChange={(e) => setNuevaCirugia(e.target.value)}
+                                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddToList(setCirugiasPreviasList, setNuevaCirugia, nuevaCirugia, cirugiasPreviasList))}
+                                                    />
+                                                    <button type="button" className="btn-secondary" onClick={() => handleAddToList(setCirugiasPreviasList, setNuevaCirugia, nuevaCirugia, cirugiasPreviasList)}>Añadir</button>
+                                                </div>
+                                                <ul className="clinical-tags">
+                                                    {cirugiasPreviasList.map((item, idx) => (
+                                                        <li key={idx} className="clinical-tag gray">
+                                                            <span>{item}</span>
+                                                            <button type="button" onClick={() => handleRemoveFromList(setCirugiasPreviasList, cirugiasPreviasList, idx)}>×</button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        </div>
+
                                         <div className="form-group">
-                                            <label>Cirugías Previas</label>
-                                            <textarea name="cirugias_previas" value={consultaForm.cirugias_previas} onChange={handleConsultaChange} rows="2" />
+                                            <label>Medicamentos Habituales</label>
+                                            <div className="list-input-group">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Medicamentos que toma actualmente"
+                                                    value={nuevoMedHabitual}
+                                                    onChange={(e) => setNuevoMedHabitual(e.target.value)}
+                                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddToList(setMedicamentosActualesList, setNuevoMedHabitual, nuevoMedHabitual, medicamentosActualesList))}
+                                                />
+                                                <button type="button" className="btn-secondary" onClick={() => handleAddToList(setMedicamentosActualesList, setNuevoMedHabitual, nuevoMedHabitual, medicamentosActualesList)}>Añadir</button>
+                                            </div>
+                                            <ul className="clinical-tags">
+                                                {medicamentosActualesList.map((item, idx) => (
+                                                    <li key={idx} className="clinical-tag green">
+                                                        <span>{item}</span>
+                                                        <button type="button" onClick={() => handleRemoveFromList(setMedicamentosActualesList, medicamentosActualesList, idx)}>×</button>
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Medicamentos Habituales</label>
-                                        <textarea name="medicamentos_actuales" value={consultaForm.medicamentos_actuales} onChange={handleConsultaChange} rows="2" placeholder="Medicamentos que toma actualmente" />
-                                    </div>
-                                    <div className="form-row">
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label>Antecedentes Familiares</label>
+                                                <div className="list-input-group">
+                                                    <input
+                                                        type="text"
+                                                        value={nuevoAntFamiliar}
+                                                        onChange={(e) => setNuevoAntFamiliar(e.target.value)}
+                                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddToList(setAntecedentesFamiliaresList, setNuevoAntFamiliar, nuevoAntFamiliar, antecedentesFamiliaresList))}
+                                                    />
+                                                    <button type="button" className="btn-secondary" onClick={() => handleAddToList(setAntecedentesFamiliaresList, setNuevoAntFamiliar, nuevoAntFamiliar, antecedentesFamiliaresList)}>Añadir</button>
+                                                </div>
+                                                <ul className="clinical-tags">
+                                                    {antecedentesFamiliaresList.map((item, idx) => (
+                                                        <li key={idx} className="clinical-tag purple">
+                                                            <span>{item}</span>
+                                                            <button type="button" onClick={() => handleRemoveFromList(setAntecedentesFamiliaresList, antecedentesFamiliaresList, idx)}>×</button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                            <div className="form-group">
+                                                <label>Antecedentes Personales / Hábitos</label>
+                                                <div className="list-input-group">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Fumar, alcohol, actividad física..."
+                                                        value={nuevoAntPersonal}
+                                                        onChange={(e) => setNuevoAntPersonal(e.target.value)}
+                                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddToList(setAntecedentesPersonalesList, setNuevoAntPersonal, nuevoAntPersonal, antecedentesPersonalesList))}
+                                                    />
+                                                    <button type="button" className="btn-secondary" onClick={() => handleAddToList(setAntecedentesPersonalesList, setNuevoAntPersonal, nuevoAntPersonal, antecedentesPersonalesList)}>Añadir</button>
+                                                </div>
+                                                <ul className="clinical-tags">
+                                                    {antecedentesPersonalesList.map((item, idx) => (
+                                                        <li key={idx} className="clinical-tag orange">
+                                                            <span>{item}</span>
+                                                            <button type="button" onClick={() => handleRemoveFromList(setAntecedentesPersonalesList, antecedentesPersonalesList, idx)}>×</button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        </div>
+
                                         <div className="form-group">
-                                            <label>Antecedentes Familiares</label>
-                                            <textarea name="antecedentes_familiares" value={consultaForm.antecedentes_familiares} onChange={handleConsultaChange} rows="2" />
-                                        </div>
-                                        <div className="form-group">
-                                            <label>Antecedentes Personales / Hábitos</label>
-                                            <textarea name="antecedentes_personales" value={consultaForm.antecedentes_personales} onChange={handleConsultaChange} rows="2" placeholder="Fumar, alcohol, actividad física..." />
+                                            <label>Vacunas</label>
+                                            <div className="list-input-group">
+                                                <input
+                                                    type="text"
+                                                    value={nuevaVacuna}
+                                                    onChange={(e) => setNuevaVacuna(e.target.value)}
+                                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddToList(setVacunasList, setNuevaVacuna, nuevaVacuna, vacunasList))}
+                                                />
+                                                <button type="button" className="btn-secondary" onClick={() => handleAddToList(setVacunasList, setNuevaVacuna, nuevaVacuna, vacunasList)}>Añadir</button>
+                                            </div>
+                                            <ul className="clinical-tags">
+                                                {vacunasList.map((item, idx) => (
+                                                    <li key={idx} className="clinical-tag teal">
+                                                        <span>{item}</span>
+                                                        <button type="button" onClick={() => handleRemoveFromList(setVacunasList, vacunasList, idx)}>×</button>
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </div>
                                     </div>
-                                    <div className="form-group">
-                                        <label>Vacunas</label>
-                                        <textarea name="vacunas" value={consultaForm.vacunas} onChange={handleConsultaChange} rows="1" />
-                                    </div>
+
                                     <div className="form-actions">
                                         <button type="button" className="btn-secondary" onClick={() => setConsultaStep(1)}>Atrás</button>
                                         <button type="button" className="btn-primary" onClick={() => setConsultaStep(3)}>Siguiente</button>
@@ -1214,58 +1411,56 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                 <div className="step-content">
                                     <h3>Consulta y Diagnóstico</h3>
                                     <div className="form-group">
-                                        <label>Motivo de Consulta (Paciente)</label>
+                                        <label>Motivo de Consulta (Relato del Paciente)</label>
                                         <textarea name="motivo_consulta" value={consultaForm.motivo_consulta} onChange={handleConsultaChange} rows="2" />
                                     </div>
+
                                     <div className="form-group">
-                                        <label>Anamnesis / Síntomas</label>
-                                        <textarea name="sintomas" value={consultaForm.sintomas} onChange={handleConsultaChange} rows="3" placeholder="Detalle síntomas y relato del paciente" />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Diagnósticos</label>
-                                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                                        <label>Síntomas / Anamnesis</label>
+                                        <div className="list-input-group">
                                             <input
                                                 type="text"
-                                                placeholder="Ej. Hipertensión Arterial"
-                                                value={nuevoDiagnostico}
-                                                onChange={(e) => setNuevoDiagnostico(e.target.value)}
-                                                onKeyPress={(e) => e.key === 'Enter' && handleAgregarDiagnostico()}
+                                                placeholder="Detalle síntomas y relato del paciente"
+                                                value={nuevoSintoma}
+                                                onChange={(e) => setNuevoSintoma(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddToList(setSintomasList, setNuevoSintoma, nuevoSintoma, sintomasList))}
                                             />
-                                            <button type="button" className="btn-secondary" onClick={handleAgregarDiagnostico}>Agregar</button>
+                                            <button type="button" className="btn-secondary" onClick={() => handleAddToList(setSintomasList, setNuevoSintoma, nuevoSintoma, sintomasList)}>Añadir</button>
                                         </div>
-                                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: '15px' }}>
-                                            {diagnosticosList.map((item, idx) => (
-                                                <li key={idx} style={{ background: '#fff', padding: '8px', marginBottom: '4px', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', border: '1px solid #eee' }}>
-                                                    <span>• {item}</span>
-                                                    <button type="button" onClick={() => handleEliminarDiagnostico(idx)} style={{ color: 'red', border: 'none', background: 'none', cursor: 'pointer' }}>×</button>
+                                        <ul className="clinical-tags">
+                                            {sintomasList.map((item, idx) => (
+                                                <li key={idx} className="clinical-tag blue">
+                                                    <span>{item}</span>
+                                                    <button type="button" onClick={() => handleRemoveFromList(setSintomasList, sintomasList, idx)}>×</button>
                                                 </li>
                                             ))}
                                         </ul>
                                     </div>
 
                                     <div className="form-group">
-                                        <label>Tratamiento / Indicaciones</label>
-                                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                                        <label>Diagnósticos</label>
+                                        <div className="list-input-group">
                                             <input
                                                 type="text"
-                                                placeholder="Ej. Reposo absoluto por 3 días"
-                                                value={nuevoTratamiento}
-                                                onChange={(e) => setNuevoTratamiento(e.target.value)}
-                                                onKeyPress={(e) => e.key === 'Enter' && handleAgregarTratamiento()}
+                                                placeholder="Ej. Hipertensión Arterial"
+                                                value={nuevoDiagnostico}
+                                                onChange={(e) => setNuevoDiagnostico(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAgregarDiagnostico())}
                                             />
-                                            <button type="button" className="btn-secondary" onClick={handleAgregarTratamiento}>Agregar</button>
+                                            <button type="button" className="btn-secondary" onClick={handleAgregarDiagnostico}>Añadir</button>
                                         </div>
-                                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: '15px' }}>
-                                            {tratamientosList.map((item, idx) => (
-                                                <li key={idx} style={{ background: '#fff', padding: '8px', marginBottom: '4px', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', border: '1px solid #eee' }}>
+                                        <ul className="clinical-tags">
+                                            {diagnosticosList.map((item, idx) => (
+                                                <li key={idx} className="clinical-tag diagnostico">
                                                     <span>• {item}</span>
-                                                    <button type="button" onClick={() => handleEliminarTratamiento(idx)} style={{ color: 'red', border: 'none', background: 'none', cursor: 'pointer' }}>×</button>
+                                                    <button type="button" onClick={() => handleEliminarDiagnostico(idx)}>×</button>
                                                 </li>
                                             ))}
                                         </ul>
                                     </div>
+
                                     <div className="form-group">
-                                        <label>Observaciones</label>
+                                        <label>Observaciones Adicionales</label>
                                         <textarea name="observaciones" value={consultaForm.observaciones} onChange={handleConsultaChange} rows="2" />
                                     </div>
                                     <div className="form-actions">
@@ -1278,10 +1473,29 @@ const DoctorDashboard = ({ user, onLogout }) => {
                             {consultaStep === 4 && (
                                 <div className="step-content">
                                     <h3>Tratamiento y Plan</h3>
+
                                     <div className="form-group">
-                                        <label>Tratamiento</label>
-                                        <textarea name="tratamiento" value={consultaForm.tratamiento} onChange={handleConsultaChange} rows="3" placeholder="Indicaciones generales" />
+                                        <label>Tratamiento / Indicaciones Generales</label>
+                                        <div className="list-input-group">
+                                            <input
+                                                type="text"
+                                                placeholder="Ej. Reposo absoluto por 3 días"
+                                                value={nuevoTratamiento}
+                                                onChange={(e) => setNuevoTratamiento(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAgregarTratamiento())}
+                                            />
+                                            <button type="button" className="btn-secondary" onClick={handleAgregarTratamiento}>Añadir</button>
+                                        </div>
+                                        <ul className="clinical-tags">
+                                            {tratamientosList.map((item, idx) => (
+                                                <li key={idx} className="clinical-tag green">
+                                                    <span>• {item}</span>
+                                                    <button type="button" onClick={() => handleEliminarTratamiento(idx)}>×</button>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
+
                                     <div className="form-group">
                                         <label>Receta Médica (Estructurada)</label>
 
