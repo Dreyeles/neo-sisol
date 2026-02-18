@@ -4,12 +4,6 @@ import './Dashboard.css';
 import API_BASE_URL from '../config';
 import LogoutIcon from './LogoutIcon';
 
-const MOCK_RESULTADOS = [
-  { id: 1, examen: 'Hemograma Completo', servicio: 'Laboratorio Central', fecha: '2024-01-12', fechaFormatted: '12 de Enero, 2024', tipo: 'pdf' },
-  { id: 2, examen: 'Rayos X de Tórax', servicio: 'Imagenología', fecha: '2024-01-10', fechaFormatted: '10 de Enero, 2024', tipo: 'img' },
-  { id: 3, examen: 'Prueba de Glucosa', servicio: 'Laboratorio Central', fecha: '2024-01-05', fechaFormatted: '05 de Enero, 2024', tipo: 'pdf' },
-];
-
 const MOCK_HISTORIAL = [
   { id: 1, especialidad: 'Consulta General', doctor: 'Dr. Juan Pérez', fecha: '2024-01-10', fechaFormatted: '10 de Enero, 2024', status: 'completed' },
   { id: 2, especialidad: 'Control Cardiológico', doctor: 'Dra. María García', fecha: '2024-01-05', fechaFormatted: '5 de Enero, 2024', status: 'completed' },
@@ -24,6 +18,10 @@ const Dashboard = ({ user, onLogout }) => {
   // Estado para citas reales
   const [citas, setCitas] = useState([]);
   const [loadingCitas, setLoadingCitas] = useState(true);
+
+  // Estado para resultados de laboratorio reales
+  const [resultados, setResultados] = useState([]);
+  const [loadingResultados, setLoadingResultados] = useState(true);
 
   // Estado para el formulario de citas
   const [citaEspecialidad, setCitaEspecialidad] = useState('');
@@ -200,22 +198,47 @@ const Dashboard = ({ user, onLogout }) => {
     }
   };
 
+  const fetchResultados = async (silent = false) => {
+    if (!user?.id_paciente) {
+      setLoadingResultados(false);
+      return;
+    }
+
+    if (!silent) setLoadingResultados(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/archivos/paciente/${user.id_paciente}`);
+      const data = await response.json();
+
+      if (data.status === 'OK') {
+        setResultados(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error al cargar resultados:', error);
+      setResultados([]);
+    } finally {
+      if (!silent) setLoadingResultados(false);
+    }
+  };
+
   useEffect(() => {
     console.log('Usuario actual en Dashboard:', user);
     if (user?.id_paciente) {
       console.log('Buscando citas para paciente ID:', user.id_paciente);
       fetchCitas();
+      fetchResultados();
 
       // Configurar refresco automático cada 30 segundos
       const intervalId = setInterval(() => {
-        console.log('🔄 Actualizando citas en segundo plano...');
+        console.log('🔄 Actualizando datos en segundo plano...');
         fetchCitas(true);
+        fetchResultados(true);
       }, 30000);
 
       // Refrescar cuando el usuario vuelve a enfocar la ventana/pestaña
       const handleFocus = () => {
         console.log('🪟 Ventana enfocada, refrescando datos...');
         fetchCitas(true);
+        fetchResultados(true);
       };
 
       window.addEventListener('focus', handleFocus);
@@ -603,9 +626,12 @@ const Dashboard = ({ user, onLogout }) => {
     }
   };
 
-  const filteredResultados = MOCK_RESULTADOS.filter(item => {
-    const matchDate = filterDate ? item.fecha === filterDate : true;
-    const matchService = filterService ? item.servicio === filterService : true;
+  const filteredResultados = resultados.filter(item => {
+    const matchDate = filterDate ? item.fecha_subida.startsWith(filterDate) : true;
+    const matchService = filterService ? (
+      item.tipo_documento.toLowerCase().includes(filterService.toLowerCase()) ||
+      item.descripcion.toLowerCase().includes(filterService.toLowerCase())
+    ) : true;
     return matchDate && matchService;
   });
 
@@ -1498,31 +1524,51 @@ const Dashboard = ({ user, onLogout }) => {
               </div>
 
               <div className="historial-list">
-                {filteredResultados.map(resultado => (
-                  <div className="historial-item" key={resultado.id}>
-                    <div className="historial-info">
-                      <h3>{resultado.examen}</h3>
-                      <p>{resultado.servicio}</p>
-                      <p className="historial-fecha">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                          <line x1="16" y1="2" x2="16" y2="6"></line>
-                          <line x1="8" y1="2" x2="8" y2="6"></line>
-                          <line x1="3" y1="10" x2="21" y2="10"></line>
+                {loadingResultados ? (
+                  <p>Cargando resultados...</p>
+                ) : filteredResultados.length > 0 ? (
+                  filteredResultados.map(resultado => (
+                    <div className="historial-item" key={resultado.id_archivo}>
+                      <div className="historial-info">
+                        <h3>{resultado.tipo_documento}</h3>
+                        <p>{resultado.descripcion || 'Sin descripción adicional'}</p>
+                        <p className="historial-fecha">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                          </svg>
+                          {new Date(resultado.fecha_subida).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <a
+                        href={`${API_BASE_URL}${resultado.ruta_archivo}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                          <polyline points="7 10 12 15 17 10"></polyline>
+                          <line x1="12" y1="15" x2="12" y2="3"></line>
                         </svg>
-                        {resultado.fechaFormatted}
-                      </p>
+                        Descargar
+                      </a>
                     </div>
-                    <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <div className="empty-state-icon">
+                      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
                       </svg>
-                      Descargar {resultado.tipo === 'pdf' ? 'PDF' : 'Imagen'}
-                    </button>
+                    </div>
+                    <p className="empty-state-title">No hay ningún resultado todavía</p>
+                    <p className="empty-state-description">Aquí aparecerán tus resultados de laboratorio e imagenología una vez que el médico los suba.</p>
                   </div>
-                ))}
+                )}
 
                 {filteredResultados.length === 0 && (
                   <div className="empty-state">
