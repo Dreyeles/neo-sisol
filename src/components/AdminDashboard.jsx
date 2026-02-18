@@ -248,12 +248,15 @@ const AdminDashboard = ({ user, onLogout }) => {
     // Prevenir scroll del body cuando cualquier modal está abierto
     useEffect(() => {
         if (showProfileModal || showEditDoctorModal || showEditServiceModal) {
-            document.body.style.overflow = 'hidden';
+            document.documentElement.classList.add('no-scroll');
+            document.body.classList.add('no-scroll');
         } else {
-            document.body.style.overflow = 'unset';
+            document.documentElement.classList.remove('no-scroll');
+            document.body.classList.remove('no-scroll');
         }
         return () => {
-            document.body.style.overflow = 'unset';
+            document.documentElement.classList.remove('no-scroll');
+            document.body.classList.remove('no-scroll');
         };
     }, [showProfileModal, showEditDoctorModal, showEditServiceModal]);
 

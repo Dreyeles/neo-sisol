@@ -25,3 +25,10 @@ body {
   width: 100%;
   overflow-x: hidden;
 }
+
+/* Global scroll lock */
+html.no-scroll,
+body.no-scroll {
+  overflow: hidden !important;
+  height: 100% !important;
+}
