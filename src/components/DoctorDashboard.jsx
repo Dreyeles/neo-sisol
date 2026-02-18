@@ -144,6 +144,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
     const [nuevoAntPersonal, setNuevoAntPersonal] = useState('');
     const [vacunasList, setVacunasList] = useState([]);
     const [nuevaVacuna, setNuevaVacuna] = useState('');
+    const [nuevaDosisVacuna, setNuevaDosisVacuna] = useState('');
 
     // Consulta
     const [sintomasList, setSintomasList] = useState([]);
@@ -154,6 +155,17 @@ const DoctorDashboard = ({ user, onLogout }) => {
         if (value.trim()) {
             setter([...list, value.trim()]);
             inputSetter('');
+        }
+    };
+
+    const handleAgregarVacuna = () => {
+        if (nuevaVacuna.trim()) {
+            const entry = nuevaDosisVacuna.trim()
+                ? `${nuevaVacuna.trim()} - ${nuevaDosisVacuna.trim()}`
+                : nuevaVacuna.trim();
+            setVacunasList([...vacunasList, entry]);
+            setNuevaVacuna('');
+            setNuevaDosisVacuna('');
         }
     };
 
@@ -1383,11 +1395,21 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                             <div className="list-input-group">
                                                 <input
                                                     type="text"
+                                                    style={{ flex: 2 }}
+                                                    placeholder="Nombre de la vacuna"
                                                     value={nuevaVacuna}
                                                     onChange={(e) => setNuevaVacuna(e.target.value)}
-                                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddToList(setVacunasList, setNuevaVacuna, nuevaVacuna, vacunasList))}
+                                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAgregarVacuna())}
                                                 />
-                                                <button type="button" className="btn-secondary" onClick={() => handleAddToList(setVacunasList, setNuevaVacuna, nuevaVacuna, vacunasList)}>Añadir</button>
+                                                <input
+                                                    type="text"
+                                                    style={{ flex: 1 }}
+                                                    placeholder="Dosis"
+                                                    value={nuevaDosisVacuna}
+                                                    onChange={(e) => setNuevaDosisVacuna(e.target.value)}
+                                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAgregarVacuna())}
+                                                />
+                                                <button type="button" className="btn-secondary" onClick={handleAgregarVacuna}>Añadir</button>
                                             </div>
                                             <ul className="clinical-tags">
                                                 {vacunasList.map((item, idx) => (
