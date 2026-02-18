@@ -168,14 +168,14 @@ const Dashboard = ({ user, onLogout }) => {
     }
   }, [activeSection, user]);
 
-  const fetchCitas = async () => {
+  const fetchCitas = async (silent = false) => {
     // Si no hay ID de paciente, no intentamos cargar y quitamos el loading
     if (!user?.id_paciente) {
       setLoadingCitas(false);
       return;
     }
 
-    setLoadingCitas(true);
+    if (!silent) setLoadingCitas(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/citas/paciente/${user.id_paciente}`);
 
@@ -196,7 +196,7 @@ const Dashboard = ({ user, onLogout }) => {
       console.error('Error al cargar citas:', error);
       setCitas([]); // En caso de error de red, lista vacía
     } finally {
-      setLoadingCitas(false);
+      if (!silent) setLoadingCitas(false);
     }
   };
 
@@ -205,6 +205,26 @@ const Dashboard = ({ user, onLogout }) => {
     if (user?.id_paciente) {
       console.log('Buscando citas para paciente ID:', user.id_paciente);
       fetchCitas();
+
+      // Configurar refresco automático cada 30 segundos
+      const intervalId = setInterval(() => {
+        console.log('🔄 Actualizando citas en segundo plano...');
+        fetchCitas(true);
+      }, 30000);
+
+      // Refrescar cuando el usuario vuelve a enfocar la ventana/pestaña
+      const handleFocus = () => {
+        console.log('🪟 Ventana enfocada, refrescando datos...');
+        fetchCitas(true);
+      };
+
+      window.addEventListener('focus', handleFocus);
+
+      // Limpieza al desmontar el componente o cambiar de usuario
+      return () => {
+        clearInterval(intervalId);
+        window.removeEventListener('focus', handleFocus);
+      };
     } else {
       console.log('No hay ID de paciente, saltando fetchCitas');
       setLoadingCitas(false);
