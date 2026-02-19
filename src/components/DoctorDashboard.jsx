@@ -670,6 +670,16 @@ const DoctorDashboard = ({ user, onLogout }) => {
         fetchDepartamentos();
     }, []);
 
+    const setProximaCitaByOffset = (days) => {
+        const date = new Date();
+        date.setDate(date.getDate() + days);
+        const formattedDate = date.toISOString().split('T')[0];
+        setConsultaForm(prev => ({
+            ...prev,
+            proxima_cita: formattedDate
+        }));
+    };
+
     // Cargar servicios cuando cambia el departamento
     const handleDeptoChange = async (e) => {
         const id_depto = e.target.value;
@@ -1661,6 +1671,11 @@ const DoctorDashboard = ({ user, onLogout }) => {
 
                                     <div className="form-group">
                                         <label>Próxima Cita (Opcional)</label>
+                                        <div className="quick-date-presets">
+                                            <button type="button" className="btn-preset" onClick={() => setProximaCitaByOffset(7)}>+1 Sem</button>
+                                            <button type="button" className="btn-preset" onClick={() => setProximaCitaByOffset(15)}>+15 Días</button>
+                                            <button type="button" className="btn-preset" onClick={() => setProximaCitaByOffset(30)}>+1 Mes</button>
+                                        </div>
                                         <input type="date" name="proxima_cita" value={consultaForm.proxima_cita} onChange={handleConsultaChange} min={new Date().toISOString().split('T')[0]} />
                                     </div>
                                     <div className="form-actions">

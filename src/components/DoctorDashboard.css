@@ -1545,3 +1545,34 @@
         border-color: #fef08a;
     }
 }
+
+/* Quick Date Presets */
+.quick-date-presets {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.btn-preset {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-preset:hover {
+    background: #0ea5e9;
+    border-color: #0ea5e9;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(14, 165, 233, 0.2);
+}
+
+.btn-preset:active {
+    transform: translateY(0);
+}

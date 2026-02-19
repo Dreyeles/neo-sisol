@@ -36,7 +36,12 @@ CROSS JOIN (
     UNION 
     SELECT '14:00:00' as inicio, '19:00:00' as fin
 ) as t
-WHERE m.estado = 'activo';
+WHERE m.estado = 'activo'
+AND (
+    (m.id_medico % 2 = 0 AND t.inicio = '07:00:00') -- Pares: Mañana
+    OR 
+    (m.id_medico % 2 <> 0 AND t.inicio = '14:00:00') -- Impares: Tarde
+);
 
 -- 3. Rehabilitar modo seguro
 SET SQL_SAFE_UPDATES = 1;
