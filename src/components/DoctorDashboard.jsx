@@ -762,7 +762,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
                     vacunas: JSON.stringify(vacunasList.map(i => i.text)),
 
                     motivo_consulta: consultaForm.motivo_consulta,
-                    sintomas: JSON.stringify(sintomasList),
+                    sintomas: JSON.stringify(sintomasList.map(i => i.text)),
                     observaciones: consultaForm.observaciones,
                     proxima_cita: consultaForm.proxima_cita,
 
@@ -1485,7 +1485,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                         <ul className="clinical-tags">
                                             {sintomasList.map((item, idx) => (
                                                 <li key={idx} className="clinical-tag blue">
-                                                    <span>{item}</span>
+                                                    <span>{item.text}</span>
                                                     <button type="button" onClick={() => handleRemoveFromList(setSintomasList, sintomasList, idx)}>×</button>
                                                 </li>
                                             ))}
