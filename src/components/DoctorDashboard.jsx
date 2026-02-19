@@ -1461,7 +1461,13 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                     <h3>Consulta y Diagnóstico</h3>
                                     <div className="form-group">
                                         <label>Motivo de Consulta (Relato del Paciente)</label>
-                                        <textarea name="motivo_consulta" value={consultaForm.motivo_consulta} onChange={handleConsultaChange} rows="2" />
+                                        <textarea
+                                            name="motivo_consulta"
+                                            value={consultaForm.motivo_consulta}
+                                            readOnly
+                                            rows="2"
+                                            style={{ backgroundColor: '#f8fafc', color: '#64748b', cursor: 'not-allowed' }}
+                                        />
                                     </div>
 
                                     <div className="form-group">
