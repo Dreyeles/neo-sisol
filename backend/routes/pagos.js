@@ -233,4 +233,98 @@ router.post('/procesar', async (req, res) => {
     }
 });
 
+// Procesar pago de exámenes y agendar citas automáticas
+router.post('/procesar-examenes', async (req, res) => {
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+        const {
+            id_cita, // ID de la cita original donde se solicitaron los exámenes
+            id_paciente,
+            examenes, // Array de { id_servicio, costo, nombre_servicio }
+            metodo_pago,
+            numero_transaccion,
+            comprobante_tipo
+        } = req.body;
+
+        if (!id_cita || !id_paciente || !examenes || !Array.isArray(examenes)) {
+            return res.status(400).json({
+                status: 'ERROR',
+                message: 'Datos incompletos para procesar el pago de exámenes'
+            });
+        }
+
+        // 1. Obtener id_medico de la cita original
+        const [citaOriginal] = await connection.query(
+            'SELECT id_medico, fecha_cita FROM cita WHERE id_cita = ?',
+            [id_cita]
+        );
+
+        if (citaOriginal.length === 0) {
+            throw new Error('Cita original no encontrada');
+        }
+
+        const id_medico = citaOriginal[0].id_medico;
+        const fechaOriginal = new Date(citaOriginal[0].fecha_cita);
+
+        // Calcular fecha para el examen (Mañana)
+        const fechaExamen = new Date(fechaOriginal);
+        fechaExamen.setDate(fechaExamen.getDate() + 1);
+        const fechaExamenStr = fechaExamen.toISOString().split('T')[0];
+
+        // 2. Por cada examen, registrar pago y crear cita
+        for (const examen of examenes) {
+            // A. Crear la cita para el examen
+            // Nota: Se usa una hora por defecto según disponibilidad o simpleza (ej: 08:00 AM)
+            const [citaResult] = await connection.query(
+                `INSERT INTO cita (
+                    id_paciente, id_medico, id_servicio, fecha_cita, hora_cita, 
+                    motivo_consulta, tipo_cita, estado
+                ) VALUES (?, ?, ?, ?, '08:00:00', ?, 'seguimiento', 'programada')`,
+                [id_paciente, id_medico, examen.id_servicio, fechaExamenStr, `Examen: ${examen.servicio || examen.nombre_servicio}`]
+            );
+
+            const id_cita_examen = citaResult.insertId;
+
+            // B. Crear registro de pago
+            const monto = parseFloat(examen.costo) || 0;
+            await connection.query(
+                `INSERT INTO pago (
+                    id_cita, id_paciente, id_servicio, monto, monto_total,
+                    metodo_pago, numero_transaccion, estado_pago, 
+                    fecha_pago, comprobante_tipo
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pagado', NOW(), ?)`,
+                [
+                    id_cita_examen,
+                    id_paciente,
+                    examen.id_servicio,
+                    monto,
+                    monto,
+                    metodo_pago || 'efectivo',
+                    numero_transaccion || `EXM-${Date.now()}-${examen.id_servicio}`,
+                    comprobante_tipo || 'boleta'
+                ]
+            );
+        }
+
+        await connection.commit();
+        res.status(201).json({
+            status: 'OK',
+            message: 'Exámenes pagados y agendados correctamente para mañana'
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error al procesar pago de exámenes:', error);
+        res.status(500).json({
+            status: 'ERROR',
+            message: 'Error al procesar el pago de los exámenes',
+            error: error.message
+        });
+    } finally {
+        connection.release();
+    }
+});
+
 export default router;

@@ -933,7 +933,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                         <div className="cita-card" key={cita.id_cita}>
                                             <div className="cita-info">
                                                 <h3>Paciente: {cita.paciente_nombre} {cita.paciente_apellido}</h3>
-                                                <p>Motivo: {cita.motivo_consulta}</p>
+                                                <p><strong>{cita.servicio_nombre || 'Consulta Médica'}:</strong> {cita.motivo_consulta}</p>
                                                 <p className="cita-fecha">
                                                     <svg className="icon-tiny" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />

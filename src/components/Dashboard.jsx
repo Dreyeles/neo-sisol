@@ -60,6 +60,7 @@ const Dashboard = ({ user, onLogout }) => {
   const [paymentType, setPaymentType] = useState('cita'); // 'cita' | 'examen'
   const [selectedExamsToPay, setSelectedExamsToPay] = useState([]);
   const [totalExamAmount, setTotalExamAmount] = useState(0);
+  const [citaActualParaExamenes, setCitaActualParaExamenes] = useState(null);
 
   // Filtros Resultados
   const [filterDate, setFilterDate] = useState('');
@@ -423,6 +424,7 @@ const Dashboard = ({ user, onLogout }) => {
         const total = exams.reduce((sum, ex) => sum + (parseFloat(ex.costo) || 0), 0);
         setSelectedExamsToPay(exams);
         setTotalExamAmount(total);
+        setCitaActualParaExamenes(cita); // Guardar la referencia de la cita
         setPaymentType('examen');
         setShowPaymentModal(true);
       }
@@ -589,20 +591,31 @@ const Dashboard = ({ user, onLogout }) => {
         ? (codigoAprobacion || `YAP-${Date.now()}`)
         : (numeroTransaccion || `TXN-${Date.now()}`);
 
+      // Determinar la URL y el body según el tipo de pago
+      const endpoint = paymentType === 'cita' ? '/api/pagos/procesar' : '/api/pagos/procesar-examenes';
+
       const payload = {
         id_paciente: user.id_paciente,
-        id_medico: citaMedico,
-        fecha_cita: citaFecha,
-        turno: citaTurno,
-        motivo_consulta: citaMotivo,
         metodo_pago: metodoPagoFinal,
         numero_transaccion: finalTxNumber,
         comprobante_tipo: 'boleta'
       };
 
+      if (paymentType === 'cita') {
+        payload.id_medico = citaMedico;
+        payload.fecha_cita = citaFecha;
+        payload.turno = citaTurno;
+        payload.motivo_consulta = citaMotivo;
+      } else {
+        // Para exámenes, necesitamos el ID de la cita original para saber el médico y la fecha base
+        // selectedExamsToPay contiene { id_servicio, costo, servicio }
+        payload.id_cita = citaActualParaExamenes?.id_cita;
+        payload.examenes = selectedExamsToPay;
+      }
+
       console.log('Enviando pago:', payload);
 
-      const response = await fetch(`${API_BASE_URL}/api/pagos/procesar`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
