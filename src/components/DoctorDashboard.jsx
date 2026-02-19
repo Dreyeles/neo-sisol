@@ -180,9 +180,10 @@ const DoctorDashboard = ({ user, onLogout }) => {
     }, [showConsultaModal, showHistorialModal, showPerfilMedicoModal]);
 
     // Handlers genéricos para las nuevas listas
+    // Handlers genéricos para las nuevas listas
     const handleAddToList = (setter, inputSetter, value, list) => {
         if (value.trim()) {
-            setter([...list, value.trim()]);
+            setter([...list, { text: value.trim(), locked: false }]);
             inputSetter('');
         }
     };
@@ -192,7 +193,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
             const entry = nuevaDosisVacuna.trim()
                 ? `${nuevaVacuna.trim()} - ${nuevaDosisVacuna.trim()}`
                 : nuevaVacuna.trim();
-            setVacunasList([...vacunasList, entry]);
+            setVacunasList([...vacunasList, { text: entry, locked: false }]);
             setNuevaVacuna('');
             setNuevaDosisVacuna('');
         }
@@ -290,13 +291,16 @@ const DoctorDashboard = ({ user, onLogout }) => {
 
                 // Intentar parsear listas de antecedentes si vienen como JSON
                 const parseList = (str) => {
+                    let list = [];
                     if (!str) return [];
                     try {
                         const parsed = JSON.parse(str);
-                        return Array.isArray(parsed) ? parsed : [str];
+                        list = Array.isArray(parsed) ? parsed : [str];
                     } catch (e) {
-                        return [str];
+                        list = [str];
                     }
+                    // Transformar a objetos con propiedad locked
+                    return list.map(item => ({ text: item, locked: true }));
                 };
 
                 setAlergiasList(parseList(pData.alergias));
@@ -749,13 +753,13 @@ const DoctorDashboard = ({ user, onLogout }) => {
                     grupo_sanguineo: consultaForm.grupo_sanguineo,
 
                     // Nuevos campos estructurados como JSON
-                    alergias: JSON.stringify(alergiasList),
-                    enfermedades_cronicas: JSON.stringify(enfermedadesCronicasList),
-                    cirugias_previas: JSON.stringify(cirugiasPreviasList),
-                    medicamentos_actuales: JSON.stringify(medicamentosActualesList),
-                    antecedentes_familiares: JSON.stringify(antecedentesFamiliaresList),
-                    antecedentes_personales: JSON.stringify(antecedentesPersonalesList),
-                    vacunas: JSON.stringify(vacunasList),
+                    alergias: JSON.stringify(alergiasList.map(i => i.text)),
+                    enfermedades_cronicas: JSON.stringify(enfermedadesCronicasList.map(i => i.text)),
+                    cirugias_previas: JSON.stringify(cirugiasPreviasList.map(i => i.text)),
+                    medicamentos_actuales: JSON.stringify(medicamentosActualesList.map(i => i.text)),
+                    antecedentes_familiares: JSON.stringify(antecedentesFamiliaresList.map(i => i.text)),
+                    antecedentes_personales: JSON.stringify(antecedentesPersonalesList.map(i => i.text)),
+                    vacunas: JSON.stringify(vacunasList.map(i => i.text)),
 
                     motivo_consulta: consultaForm.motivo_consulta,
                     sintomas: JSON.stringify(sintomasList),
@@ -1289,8 +1293,9 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                             <ul className="clinical-tags">
                                                 {alergiasList.map((item, idx) => (
                                                     <li key={idx} className="clinical-tag red">
-                                                        <span>{item}</span>
-                                                        <button type="button" onClick={() => handleRemoveFromList(setAlergiasList, alergiasList, idx)}>×</button>
+                                                        <span>{item.text}</span>
+                                                        {!item.locked && <button type="button" onClick={() => handleRemoveFromList(setAlergiasList, alergiasList, idx)}>×</button>}
+                                                        {item.locked && <span style={{ marginLeft: '5px', fontSize: '10px' }} title="Dato histórico (no editable)">🔒</span>}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -1312,8 +1317,9 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                                 <ul className="clinical-tags">
                                                     {enfermedadesCronicasList.map((item, idx) => (
                                                         <li key={idx} className="clinical-tag blue">
-                                                            <span>{item}</span>
-                                                            <button type="button" onClick={() => handleRemoveFromList(setEnfermedadesCronicasList, enfermedadesCronicasList, idx)}>×</button>
+                                                            <span>{item.text}</span>
+                                                            {!item.locked && <button type="button" onClick={() => handleRemoveFromList(setEnfermedadesCronicasList, enfermedadesCronicasList, idx)}>×</button>}
+                                                            {item.locked && <span style={{ marginLeft: '5px', fontSize: '10px' }} title="Dato histórico (no editable)">🔒</span>}
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -1332,8 +1338,9 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                                 <ul className="clinical-tags">
                                                     {cirugiasPreviasList.map((item, idx) => (
                                                         <li key={idx} className="clinical-tag gray">
-                                                            <span>{item}</span>
-                                                            <button type="button" onClick={() => handleRemoveFromList(setCirugiasPreviasList, cirugiasPreviasList, idx)}>×</button>
+                                                            <span>{item.text}</span>
+                                                            {!item.locked && <button type="button" onClick={() => handleRemoveFromList(setCirugiasPreviasList, cirugiasPreviasList, idx)}>×</button>}
+                                                            {item.locked && <span style={{ marginLeft: '5px', fontSize: '10px' }} title="Dato histórico (no editable)">🔒</span>}
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -1355,8 +1362,9 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                             <ul className="clinical-tags">
                                                 {medicamentosActualesList.map((item, idx) => (
                                                     <li key={idx} className="clinical-tag green">
-                                                        <span>{item}</span>
-                                                        <button type="button" onClick={() => handleRemoveFromList(setMedicamentosActualesList, medicamentosActualesList, idx)}>×</button>
+                                                        <span>{item.text}</span>
+                                                        {!item.locked && <button type="button" onClick={() => handleRemoveFromList(setMedicamentosActualesList, medicamentosActualesList, idx)}>×</button>}
+                                                        {item.locked && <span style={{ marginLeft: '5px', fontSize: '10px' }} title="Dato histórico (no editable)">🔒</span>}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -1377,8 +1385,9 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                                 <ul className="clinical-tags">
                                                     {antecedentesFamiliaresList.map((item, idx) => (
                                                         <li key={idx} className="clinical-tag purple">
-                                                            <span>{item}</span>
-                                                            <button type="button" onClick={() => handleRemoveFromList(setAntecedentesFamiliaresList, antecedentesFamiliaresList, idx)}>×</button>
+                                                            <span>{item.text}</span>
+                                                            {!item.locked && <button type="button" onClick={() => handleRemoveFromList(setAntecedentesFamiliaresList, antecedentesFamiliaresList, idx)}>×</button>}
+                                                            {item.locked && <span style={{ marginLeft: '5px', fontSize: '10px' }} title="Dato histórico (no editable)">🔒</span>}
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -1398,8 +1407,9 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                                 <ul className="clinical-tags">
                                                     {antecedentesPersonalesList.map((item, idx) => (
                                                         <li key={idx} className="clinical-tag orange">
-                                                            <span>{item}</span>
-                                                            <button type="button" onClick={() => handleRemoveFromList(setAntecedentesPersonalesList, antecedentesPersonalesList, idx)}>×</button>
+                                                            <span>{item.text}</span>
+                                                            {!item.locked && <button type="button" onClick={() => handleRemoveFromList(setAntecedentesPersonalesList, antecedentesPersonalesList, idx)}>×</button>}
+                                                            {item.locked && <span style={{ marginLeft: '5px', fontSize: '10px' }} title="Dato histórico (no editable)">🔒</span>}
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -1430,8 +1440,9 @@ const DoctorDashboard = ({ user, onLogout }) => {
                                             <ul className="clinical-tags">
                                                 {vacunasList.map((item, idx) => (
                                                     <li key={idx} className="clinical-tag teal">
-                                                        <span>{item}</span>
-                                                        <button type="button" onClick={() => handleRemoveFromList(setVacunasList, vacunasList, idx)}>×</button>
+                                                        <span>{item.text}</span>
+                                                        {!item.locked && <button type="button" onClick={() => handleRemoveFromList(setVacunasList, vacunasList, idx)}>×</button>}
+                                                        {item.locked && <span style={{ marginLeft: '5px', fontSize: '10px' }} title="Dato histórico (no editable)">🔒</span>}
                                                     </li>
                                                 ))}
                                             </ul>
