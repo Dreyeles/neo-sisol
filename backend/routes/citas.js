@@ -218,7 +218,8 @@ router.get('/paciente/:id_paciente', async (req, res) => {
                     m.nombres as medico_nombre, m.apellidos as medico_apellido, 
                     e.nombre as especialidad,
                     am.id_atencion, am.examenes_solicitados, am.diagnostico, 
-                    am.receta_medica, am.tratamiento, am.observaciones
+                    am.receta_medica, am.tratamiento, am.observaciones,
+                    am.proxima_cita_recomendada
              FROM cita c
              JOIN medico m ON c.id_medico = m.id_medico
              JOIN especialidades e ON m.id_especialidad = e.id_especialidad
