@@ -419,7 +419,12 @@ const Dashboard = ({ user, onLogout }) => {
   const handlePayExams = (cita) => {
     try {
       if (!cita.examenes_solicitados) return;
-      const exams = JSON.parse(cita.examenes_solicitados);
+
+      let exams = cita.examenes_solicitados;
+      if (typeof exams === 'string') {
+        exams = JSON.parse(exams);
+      }
+
       if (Array.isArray(exams) && exams.length > 0) {
         const total = exams.reduce((sum, ex) => sum + (parseFloat(ex.costo) || 0), 0);
         setSelectedExamsToPay(exams);
@@ -1508,7 +1513,10 @@ const Dashboard = ({ user, onLogout }) => {
                           </button>
                           {cita.examenes_solicitados && (() => {
                             try {
-                              const exams = JSON.parse(cita.examenes_solicitados);
+                              let exams = cita.examenes_solicitados;
+                              if (typeof exams === 'string') {
+                                exams = JSON.parse(exams);
+                              }
                               return Array.isArray(exams) && exams.length > 0;
                             } catch (e) { return false; }
                           })() && (
